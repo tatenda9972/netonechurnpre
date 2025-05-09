@@ -189,8 +189,17 @@ def configure_routes(app):
                 
                 # Store prediction details with error handling
                 try:
+                    # Convert DataFrame to dictionary in a way that preserves row data
+                    # Using orient='index' makes each row a dictionary with column names as keys
+                    customer_predictions_dict = result['customer_predictions'].to_dict(orient='index')
+                    
+                    # Print sample of what's being saved for debugging
+                    sample_keys = list(customer_predictions_dict.keys())[:2]
+                    for key in sample_keys:
+                        print(f"Sample row {key}: {customer_predictions_dict[key]}")
+                    
                     prediction_details = {
-                        'customer_predictions': result['customer_predictions'].to_dict(),
+                        'customer_predictions': customer_predictions_dict,
                         'confusion_matrix': result['confusion_matrix'].tolist() if 'confusion_matrix' in result else None
                     }
                 except Exception as e:
