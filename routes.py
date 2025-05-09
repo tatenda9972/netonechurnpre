@@ -151,12 +151,24 @@ def configure_routes(app):
                     'importance': result['feature_importance']['importance']
                 }
                 
+                # Calculate churn count safely
+                churn_count = 0
+                if 'prediction' in result['customer_predictions']:
+                    # Try to use .sum() on the prediction column
+                    try:
+                        churn_count = int(result['customer_predictions']['prediction'].sum())
+                    except:
+                        # Fallback: count predictions manually
+                        for _, row in result['customer_predictions'].iterrows():
+                            if 'prediction' in row and row['prediction'] == 1:
+                                churn_count += 1
+                
                 # Save prediction to database
                 prediction = Prediction(
                     user_id=current_user.id,
                     file_name=original_filename,
                     total_customers=len(preprocessed_df),
-                    churn_count=int(result['customer_predictions']['prediction'].sum()),
+                    churn_count=churn_count,
                     accuracy=result['metrics']['accuracy'],
                     precision=result['metrics']['precision'],
                     recall=result['metrics']['recall'],
