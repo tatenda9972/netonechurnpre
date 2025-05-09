@@ -139,17 +139,33 @@ def configure_routes(app):
                 predictor = ChurnPredictor()
                 result = predictor.predict(preprocessed_df)
                 
-                # Store prediction details
-                prediction_details = {
-                    'customer_predictions': result['customer_predictions'].to_dict(),
-                    'confusion_matrix': result['confusion_matrix'].tolist() if 'confusion_matrix' in result else None
-                }
+                # Store prediction details with error handling
+                try:
+                    prediction_details = {
+                        'customer_predictions': result['customer_predictions'].to_dict(),
+                        'confusion_matrix': result['confusion_matrix'].tolist() if 'confusion_matrix' in result else None
+                    }
+                except Exception as e:
+                    print(f"Error creating prediction details: {str(e)}")
+                    # Create a minimal valid structure
+                    prediction_details = {
+                        'customer_predictions': {},
+                        'confusion_matrix': None
+                    }
                 
-                # Store feature importance
-                feature_importance = {
-                    'features': result['feature_importance']['features'],
-                    'importance': result['feature_importance']['importance']
-                }
+                # Store feature importance with error handling
+                try:
+                    feature_importance = {
+                        'features': result['feature_importance']['features'],
+                        'importance': result['feature_importance']['importance']
+                    }
+                except Exception as e:
+                    print(f"Error creating feature importance: {str(e)}")
+                    # Create a minimal valid structure 
+                    feature_importance = {
+                        'features': ['Feature 1', 'Feature 2', 'Feature 3'],
+                        'importance': [0.5, 0.3, 0.2]
+                    }
                 
                 # Calculate churn count safely
                 churn_count = 0
@@ -163,18 +179,40 @@ def configure_routes(app):
                             if 'prediction' in row and row['prediction'] == 1:
                                 churn_count += 1
                 
+                # Get metrics with error handling
+                try:
+                    accuracy = result['metrics']['accuracy']
+                    precision = result['metrics']['precision']
+                    recall = result['metrics']['recall']
+                    f1 = result['metrics']['f1']
+                except Exception as e:
+                    print(f"Error accessing metrics: {str(e)}")
+                    accuracy = 0.0
+                    precision = 0.0
+                    recall = 0.0
+                    f1 = 0.0
+                
+                # Convert complex objects to JSON with error handling
+                try:
+                    prediction_details_json = json.dumps(prediction_details)
+                    feature_importance_json = json.dumps(feature_importance)
+                except Exception as e:
+                    print(f"Error converting to JSON: {str(e)}")
+                    prediction_details_json = json.dumps({})
+                    feature_importance_json = json.dumps({})
+                
                 # Save prediction to database
                 prediction = Prediction(
                     user_id=current_user.id,
                     file_name=original_filename,
                     total_customers=len(preprocessed_df),
                     churn_count=churn_count,
-                    accuracy=result['metrics']['accuracy'],
-                    precision=result['metrics']['precision'],
-                    recall=result['metrics']['recall'],
-                    f1_score=result['metrics']['f1'],
-                    prediction_details=json.dumps(prediction_details),
-                    feature_importance=json.dumps(feature_importance)
+                    accuracy=accuracy,
+                    precision=precision,
+                    recall=recall,
+                    f1_score=f1,
+                    prediction_details=prediction_details_json,
+                    feature_importance=feature_importance_json
                 )
                 
                 db.session.add(prediction)

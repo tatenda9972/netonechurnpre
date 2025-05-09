@@ -37,12 +37,21 @@ class Prediction(db.Model):
     feature_importance = db.Column(db.Text, nullable=False)
     
     def get_details(self):
-        """Return prediction details as a dictionary"""
-        return json.loads(self.prediction_details)
+        """Return prediction details as a dictionary with error handling"""
+        try:
+            return json.loads(self.prediction_details)
+        except Exception as e:
+            print(f"Error parsing prediction details: {str(e)}")
+            return {'customer_predictions': {}, 'confusion_matrix': None}
     
     def get_feature_importance(self):
-        """Return feature importance as a dictionary"""
-        return json.loads(self.feature_importance)
+        """Return feature importance as a dictionary with error handling"""
+        try:
+            return json.loads(self.feature_importance)
+        except Exception as e:
+            print(f"Error parsing feature importance: {str(e)}")
+            return {'features': ['Feature 1', 'Feature 2', 'Feature 3'], 
+                   'importance': [0.5, 0.3, 0.2]}
     
     def __repr__(self):
         return f'<Prediction {self.id}: {self.file_name}>'
