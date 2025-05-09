@@ -5,6 +5,8 @@ from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf.csrf import CSRFProtect
+from utils import get_retention_recommendations
 
 class Base(DeclarativeBase):
     pass
@@ -14,6 +16,9 @@ db = SQLAlchemy(model_class=Base)
 # Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "netone_secret_key_development")
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 # Set up proxy middleware
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -51,7 +56,10 @@ with app.app_context():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-# Configure Flask app to use current datetime in templates
+# Configure Flask app to use current datetime in templates and add helper functions
 @app.context_processor
 def inject_now():
-    return {'now': datetime.datetime.now()}
+    return {
+        'now': datetime.datetime.now(),
+        'get_retention_recommendations': get_retention_recommendations
+    }
