@@ -117,6 +117,8 @@ def configure_routes(app):
     def prediction():
         """Handle churn prediction from CSV upload"""
         form = PredictionForm()
+        recent_predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(
+            Prediction.created_at.desc()).limit(5).all()
         
         if form.validate_on_submit():
             try:
@@ -129,15 +131,61 @@ def configure_routes(app):
                 filename = f"{timestamp}_{original_filename}"
                 
                 # Read CSV data
-                csv_data = csv_file.read().decode('utf-8')
-                df = pd.read_csv(StringIO(csv_data))
+                try:
+                    csv_data = csv_file.read().decode('utf-8')
+                    df = pd.read_csv(StringIO(csv_data))
+                    print(f"Successfully loaded CSV with {len(df)} rows and {len(df.columns)} columns")
+                except Exception as e:
+                    print(f"Error reading CSV file: {str(e)}")
+                    flash('Error reading CSV file. Please ensure it is a valid CSV file.', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form, 
+                                          recent_predictions=recent_predictions)
+                
+                # Check if data is valid
+                if len(df) == 0:
+                    flash('The uploaded CSV file is empty.', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form,
+                                          recent_predictions=recent_predictions)
+                
+                # Validate required columns
+                required_columns = [
+                    'Age', 'Gender', 'Location', 'Tenure_Months', 
+                    'Data_Usage_GB', 'Call_Minutes', 'SMS_Count'
+                ]
+                
+                missing_columns = [col for col in required_columns if col not in df.columns]
+                if missing_columns:
+                    missing_cols_str = ', '.join(missing_columns)
+                    flash(f'Missing required columns in the CSV file: {missing_cols_str}', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form,
+                                          recent_predictions=recent_predictions)
                 
                 # Preprocess data
-                preprocessed_df = preprocess_csv(df)
+                try:
+                    preprocessed_df = preprocess_csv(df)
+                    print(f"Preprocessed data shape: {preprocessed_df.shape}")
+                except Exception as e:
+                    print(f"Error during data preprocessing: {str(e)}")
+                    flash(f'Error preprocessing data: {str(e)}', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form,
+                                          recent_predictions=recent_predictions)
                 
                 # Make predictions
-                predictor = ChurnPredictor()
-                result = predictor.predict(preprocessed_df)
+                try:
+                    predictor = ChurnPredictor()
+                    
+                    # Check if model was loaded successfully
+                    if predictor.pipeline is None:
+                        print("Model not loaded successfully, using fallback")
+                        flash('Warning: Using fallback prediction as the model could not be loaded.', 'warning')
+                    
+                    result = predictor.predict(preprocessed_df)
+                    print("Prediction completed successfully")
+                except Exception as e:
+                    print(f"Error during prediction: {str(e)}")
+                    flash(f'Error during prediction: {str(e)}', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form,
+                                          recent_predictions=recent_predictions)
                 
                 # Store prediction details with error handling
                 try:
@@ -147,7 +195,6 @@ def configure_routes(app):
                     }
                 except Exception as e:
                     print(f"Error creating prediction details: {str(e)}")
-                    # Create a minimal valid structure
                     prediction_details = {
                         'customer_predictions': {},
                         'confusion_matrix': None
@@ -161,7 +208,6 @@ def configure_routes(app):
                     }
                 except Exception as e:
                     print(f"Error creating feature importance: {str(e)}")
-                    # Create a minimal valid structure 
                     feature_importance = {
                         'features': ['Feature 1', 'Feature 2', 'Feature 3'],
                         'importance': [0.5, 0.3, 0.2]
@@ -169,15 +215,18 @@ def configure_routes(app):
                 
                 # Calculate churn count safely
                 churn_count = 0
-                if 'prediction' in result['customer_predictions']:
-                    # Try to use .sum() on the prediction column
-                    try:
-                        churn_count = int(result['customer_predictions']['prediction'].sum())
-                    except:
-                        # Fallback: count predictions manually
-                        for _, row in result['customer_predictions'].iterrows():
-                            if 'prediction' in row and row['prediction'] == 1:
-                                churn_count += 1
+                try:
+                    if isinstance(result['customer_predictions'], pd.DataFrame):
+                        if 'prediction' in result['customer_predictions'].columns:
+                            churn_count = int(result['customer_predictions']['prediction'].sum())
+                    else:
+                        # Dictionary format
+                        prediction_col = result['customer_predictions'].get('prediction', {})
+                        if prediction_col:
+                            churn_count = sum(1 for val in prediction_col.values() if val == 1)
+                except Exception as e:
+                    print(f"Error calculating churn count: {str(e)}")
+                    churn_count = 0
                 
                 # Get metrics with error handling
                 try:
@@ -202,30 +251,40 @@ def configure_routes(app):
                     feature_importance_json = json.dumps({})
                 
                 # Save prediction to database
-                prediction = Prediction(
-                    user_id=current_user.id,
-                    file_name=original_filename,
-                    total_customers=len(preprocessed_df),
-                    churn_count=churn_count,
-                    accuracy=accuracy,
-                    precision=precision,
-                    recall=recall,
-                    f1_score=f1,
-                    prediction_details=prediction_details_json,
-                    feature_importance=feature_importance_json
-                )
-                
-                db.session.add(prediction)
-                db.session.commit()
-                
-                flash('Prediction completed successfully!', 'success')
-                return redirect(url_for('prediction_result', prediction_id=prediction.id))
+                try:
+                    prediction = Prediction(
+                        user_id=current_user.id,
+                        file_name=original_filename,
+                        total_customers=len(preprocessed_df),
+                        churn_count=churn_count,
+                        accuracy=accuracy,
+                        precision=precision,
+                        recall=recall,
+                        f1_score=f1,
+                        prediction_details=prediction_details_json,
+                        feature_importance=feature_importance_json
+                    )
+                    
+                    db.session.add(prediction)
+                    db.session.commit()
+                    
+                    flash('Prediction completed successfully!', 'success')
+                    return redirect(url_for('prediction_result', prediction_id=prediction.id))
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"Database error: {str(e)}")
+                    flash(f'Error saving prediction: {str(e)}', 'danger')
+                    return render_template('prediction.html', title='Prediction', form=form,
+                                          recent_predictions=recent_predictions)
             
             except Exception as e:
+                print(f"General error in prediction route: {str(e)}")
                 flash(f'Error processing file: {str(e)}', 'danger')
-                return render_template('prediction.html', title='Prediction', form=form)
+                return render_template('prediction.html', title='Prediction', form=form,
+                                       recent_predictions=recent_predictions)
         
-        return render_template('prediction.html', title='Prediction', form=form)
+        return render_template('prediction.html', title='Prediction', form=form, 
+                              recent_predictions=recent_predictions)
     
     @app.route('/prediction/<int:prediction_id>')
     @login_required
@@ -268,16 +327,22 @@ def configure_routes(app):
     @login_required
     def delete_prediction(prediction_id):
         """Delete a prediction"""
-        prediction = Prediction.query.get_or_404(prediction_id)
+        try:
+            prediction = Prediction.query.get_or_404(prediction_id)
+            
+            # Check if user owns this prediction or is admin
+            if prediction.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+            
+            db.session.delete(prediction)
+            db.session.commit()
+            
+            flash('Prediction deleted successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting prediction: {str(e)}")
+            flash(f'Error deleting prediction: {str(e)}', 'danger')
         
-        # Check if user owns this prediction or is admin
-        if prediction.user_id != current_user.id and not current_user.is_admin:
-            abort(403)
-        
-        db.session.delete(prediction)
-        db.session.commit()
-        
-        flash('Prediction deleted successfully', 'success')
         return redirect(url_for('history'))
     
     @app.route('/download_report/<int:prediction_id>')
