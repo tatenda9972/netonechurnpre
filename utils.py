@@ -30,39 +30,61 @@ def preprocess_csv(df):
     # Create a copy to avoid modifying the original
     data = df.copy()
     
-    # List of expected columns
-    expected_columns = [
-        'Customer_ID', 'First_Name', 'Surname', 'Age', 'Gender', 
-        'Location', 'Tenure_Months', 'Plan_Type', 'Data_Usage_GB', 
-        'Call_Minutes', 'SMS_Count', 'Payment_History_12mo', 
-        'Outstanding_Balance', 'Monthly_Bill', 'Num_Complaints', 
-        'Support_Tickets', 'Payment_Delays', 'Churn'
-    ]
+    # Print column names for debugging
+    print(f"Input CSV columns: {data.columns.tolist()}")
     
-    # Check if required columns exist
-    for col in expected_columns:
-        if col not in data.columns and col != 'Churn':  # Churn column is optional for prediction
-            # If important column is missing, add it with default values
-            if col in ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Call_Minutes', 
-                      'SMS_Count', 'Payment_History_12mo', 'Outstanding_Balance', 
-                      'Monthly_Bill', 'Num_Complaints', 'Support_Tickets', 'Payment_Delays']:
-                data[col] = 0
-            elif col in ['Gender', 'Location', 'Plan_Type']:
-                data[col] = 'Unknown'
-    
-    # Drop unnecessary columns if they exist
-    columns_to_keep = [
+    # List of expected columns (core columns needed for prediction)
+    core_columns = [
         'Customer_ID', 'Age', 'Gender', 'Location', 'Tenure_Months', 
         'Plan_Type', 'Data_Usage_GB', 'Call_Minutes', 'SMS_Count', 
         'Payment_History_12mo', 'Outstanding_Balance', 'Monthly_Bill', 
         'Num_Complaints', 'Support_Tickets', 'Payment_Delays'
     ]
     
+    # Additional columns that might be present in the CSV but aren't needed for prediction
+    optional_columns = [
+        'First_Name', 'Surname', 'Street_Address', 'Activation_Date',
+        'Contract_Duration_Months', 'Customer Phone Number', 'Churn'
+    ]
+    
+    # Check if required core columns exist, add them with defaults if missing
+    for col in core_columns:
+        if col not in data.columns:
+            # If important column is missing, add it with default values
+            if col in ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Call_Minutes', 
+                      'SMS_Count', 'Payment_History_12mo', 'Outstanding_Balance', 
+                      'Monthly_Bill', 'Num_Complaints', 'Support_Tickets', 'Payment_Delays']:
+                data[col] = 0
+                print(f"Added missing column with default value: {col}")
+            elif col in ['Gender', 'Location', 'Plan_Type']:
+                data[col] = 'Unknown'
+                print(f"Added missing column with default value: {col}")
+            elif col == 'Customer_ID':
+                # Generate random IDs if needed
+                data[col] = [f"C{i:04d}" for i in range(1, len(data) + 1)]
+                print(f"Added missing column with generated values: {col}")
+    
+    # Columns to keep for prediction
+    columns_to_keep = core_columns.copy()
+    
+    # Add Churn column if it exists (for training)
     if 'Churn' in data.columns:
         columns_to_keep.append('Churn')
+        print("Churn column exists in the data and will be used for training")
+    else:
+        print("Churn column doesn't exist - using prediction mode only")
     
-    # Keep only required columns
-    data = data[columns_to_keep]
+    # Keep only required columns for the prediction model
+    try:
+        data = data[columns_to_keep]
+        print(f"Kept columns for prediction: {columns_to_keep}")
+    except KeyError as e:
+        print(f"Error selecting columns: {e}")
+        print(f"Available columns: {data.columns.tolist()}")
+        # If we can't select all columns, use what we have
+        available_columns = [col for col in columns_to_keep if col in data.columns]
+        data = data[available_columns]
+        print(f"Using available columns: {available_columns}")
     
     # Fill missing values
     data['Age'].fillna(data['Age'].median(), inplace=True)
