@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block title %}Login - NetOne Churn Prediction System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title text-center">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('login') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>{{ form.email.label.text }}
+                        </label>
+                        {{ form.email(class="form-control", id="email", placeholder="Enter your email") }}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-2"></i>{{ form.password.label.text }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.password(class="form-control", id="password", placeholder="Enter your password") }}
+                            <span class="input-group-text">
+                                <i class="fas fa-eye toggle-password" data-target="#password"></i>
+                            </span>
+                        </div>
+                        {% for error in form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me(class="form-check-input", id="remember") }}
+                        <label class="form-check-label" for="remember">
+                            {{ form.remember_me.label.text }}
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-info-circle me-2"></i>Information</h5>
+                <p class="card-text">
+                    Welcome to the NetOne Churn Prediction System. Please log in to access the dashboard and prediction tools.
+                </p>
+                <p class="card-text">
+                    This system helps identify customers who are likely to churn, allowing you to implement proactive retention strategies.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

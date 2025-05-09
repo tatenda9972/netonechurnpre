@@ -1,0 +1,191 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - NetOne Churn Prediction System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="display-5 fw-bold">
+            <i class="fas fa-tachometer-alt me-3"></i>Dashboard
+        </h1>
+        <p class="lead">
+            Welcome back, {{ current_user.first_name }}! Here's an overview of your churn prediction data.
+        </p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="stats-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="stats-value">{{ total_predictions }}</div>
+            <div class="stats-label">Total Predictions</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="stats-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="stats-value">{{ "%.1f"|format(avg_churn_rate) }}%</div>
+            <div class="stats-label">Average Churn Rate</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="stats-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stats-value">{{ now.strftime('%d %b %Y') }}</div>
+            <div class="stats-label">Last Update</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('prediction') }}" class="btn btn-outline-primary btn-lg d-block mb-2">
+                            <i class="fas fa-chart-pie fa-2x mb-2 d-block mx-auto"></i>
+                            New Prediction
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('history') }}" class="btn btn-outline-primary btn-lg d-block mb-2">
+                            <i class="fas fa-history fa-2x mb-2 d-block mx-auto"></i>
+                            View History
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('insights') }}" class="btn btn-outline-primary btn-lg d-block mb-2">
+                            <i class="fas fa-lightbulb fa-2x mb-2 d-block mx-auto"></i>
+                            View Insights
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary btn-lg d-block mb-2">
+                            <i class="fas fa-user-cog fa-2x mb-2 d-block mx-auto"></i>
+                            Profile Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Predictions -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Recent Predictions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_predictions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>File Name</th>
+                                    <th>Total Customers</th>
+                                    <th>Churn Count</th>
+                                    <th>Churn Rate</th>
+                                    <th>Accuracy</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prediction in recent_predictions %}
+                                    <tr>
+                                        <td>{{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>{{ prediction.file_name }}</td>
+                                        <td>{{ prediction.total_customers }}</td>
+                                        <td>{{ prediction.churn_count }}</td>
+                                        <td>{{ "%.2f"|format(prediction.churn_count / prediction.total_customers * 100) }}%</td>
+                                        <td>{{ "%.2f"|format(prediction.accuracy * 100) }}%</td>
+                                        <td>
+                                            <a href="{{ url_for('prediction_result', prediction_id=prediction.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="{{ url_for('download_report', prediction_id=prediction.id) }}" class="btn btn-sm btn-secondary">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('history') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> View All Predictions
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i> You haven't made any predictions yet.
+                        <a href="{{ url_for('prediction') }}" class="alert-link">Make your first prediction</a>.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Getting Started Guide -->
+{% if total_predictions == 0 %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-book me-2"></i>Getting Started Guide</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-upload me-2"></i>Make Your First Prediction</h5>
+                        <ol class="mb-4">
+                            <li>Go to the <a href="{{ url_for('prediction') }}">Prediction</a> page</li>
+                            <li>Upload a CSV file with customer data</li>
+                            <li>Click "Predict Churn" to analyze the data</li>
+                            <li>View the results and take action based on recommendations</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-file-csv me-2"></i>CSV File Format</h5>
+                        <p>Your CSV file should include the following columns:</p>
+                        <ul>
+                            <li>Customer_ID - Unique identifier for each customer</li>
+                            <li>Age - Customer age</li>
+                            <li>Gender - Customer gender</li>
+                            <li>Location - Customer location</li>
+                            <li>Tenure_Months - How long they've been a customer</li>
+                            <li>Data_Usage_GB - Monthly data usage</li>
+                            <li>And other relevant customer metrics</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('prediction') }}" class="btn btn-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Make Your First Prediction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

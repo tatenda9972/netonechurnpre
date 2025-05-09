@@ -1,0 +1,305 @@
+{% extends "layout.html" %}
+
+{% block title %}Prediction - NetOne Churn Prediction System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="display-5 fw-bold">
+            <i class="fas fa-chart-pie me-3"></i>Customer Churn Prediction
+        </h1>
+        <p class="lead">
+            Upload your customer data to predict which customers are at risk of churning.
+        </p>
+    </div>
+</div>
+
+{% if prediction %}
+<!-- Prediction Results Section -->
+<div id="results" class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Prediction Results - {{ prediction.file_name }}
+                </h5>
+                <small class="text-muted">Processed on {{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <div class="card-body">
+                <!-- Metrics Overview -->
+                <div class="prediction-metrics mb-4">
+                    <div class="metric-item">
+                        <div class="metric-value">{{ prediction.total_customers }}</div>
+                        <div class="metric-label">Total Customers</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ prediction.churn_count }}</div>
+                        <div class="metric-label">Predicted Churn</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ "%.1f"|format(prediction.churn_count / prediction.total_customers * 100) }}%</div>
+                        <div class="metric-label">Churn Rate</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ "%.1f"|format(prediction.accuracy * 100) }}%</div>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ "%.1f"|format(prediction.precision * 100) }}%</div>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ "%.1f"|format(prediction.recall * 100) }}%</div>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                </div>
+                
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="churn-pie-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="feature-importance-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>Retention Recommendations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Get recommendations -->
+                        {% set recommendations = get_retention_recommendations(prediction) %}
+                        {% if recommendations %}
+                            {% for rec in recommendations %}
+                                <div class="recommendation-card">
+                                    <h5 class="recommendation-title">{{ rec.title }}</h5>
+                                    <p>{{ rec.description }}</p>
+                                    <div class="recommendation-action">
+                                        <i class="fas fa-arrow-right me-2"></i>{{ rec.action }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>No specific recommendations available for this prediction.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="{{ url_for('download_report', prediction_id=prediction.id) }}" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Download Report
+                        </a>
+                        <a href="{{ url_for('insights') }}" class="btn btn-secondary">
+                            <i class="fas fa-chart-line me-2"></i>View Insights
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('prediction') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-redo me-2"></i>New Prediction
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Data Preview -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>Customer Data Preview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Age</th>
+                                <th>Gender</th>
+                                <th>Location</th>
+                                <th>Tenure (Months)</th>
+                                <th>Monthly Bill</th>
+                                <th>Churn Prediction</th>
+                                <th>Probability</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set customer_data = details.customer_predictions %}
+                            {% for id, row in customer_data.items() %}
+                                {% if loop.index <= 10 %}
+                                    <tr class="{{ 'table-danger' if row.prediction == 1 else '' }}">
+                                        <td>{{ row.Customer_ID }}</td>
+                                        <td>{{ row.Age }}</td>
+                                        <td>{{ row.Gender }}</td>
+                                        <td>{{ row.Location }}</td>
+                                        <td>{{ row.Tenure_Months }}</td>
+                                        <td>${{ "%.2f"|format(row.Monthly_Bill) }}</td>
+                                        <td>
+                                            {% if row.prediction == 1 %}
+                                                <span class="badge bg-danger">Likely to Churn</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Likely to Stay</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ "%.1f"|format(row.churn_probability * 100) }}%</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted">
+                    <small>Showing 10 of {{ prediction.total_customers }} customers. Download the full report for complete data.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pass data to JavaScript for charts -->
+<script id="chart-data" type="application/json">
+{
+    "churnDistribution": {
+        "churned": {{ prediction.churn_count }},
+        "retained": {{ prediction.total_customers - prediction.churn_count }}
+    },
+    "featureImportance": {{ feature_importance|tojson }},
+    "confusionMatrix": {{ details.confusion_matrix|default('null')|tojson }}
+}
+</script>
+
+{% else %}
+<!-- Upload Form Section -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-upload me-2"></i>Upload Customer Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="prediction-form" method="POST" action="{{ url_for('prediction') }}" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <label for="csv_file" class="form-label">{{ form.csv_file.label.text }}</label>
+                        <div class="input-group mb-3">
+                            {{ form.csv_file(class="form-control", id="csv_file") }}
+                            <label class="input-group-text" for="csv_file">
+                                <i class="fas fa-file-csv me-2"></i>Browse
+                            </label>
+                        </div>
+                        {% for error in form.csv_file.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">
+                            Upload a CSV file containing customer data for churn prediction.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Required Data Fields
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Your CSV file should include these fields:</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Customer_ID</strong>
+                            <div class="text-muted">Unique identifier</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Required</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Age</strong>
+                            <div class="text-muted">Customer age</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Required</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Gender</strong>
+                            <div class="text-muted">Customer gender</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Required</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Location</strong>
+                            <div class="text-muted">Customer location</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Required</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Tenure_Months</strong>
+                            <div class="text-muted">How long they've been a customer</div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Required</span>
+                    </li>
+                </ul>
+                <p class="mt-3 mb-0">
+                    <small>Additional fields like Data_Usage_GB, Call_Minutes, SMS_Count, etc. will improve prediction accuracy.</small>
+                </p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Need Help?
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>If you need a sample CSV file or have questions about the format, check out our resources:</p>
+                <ul>
+                    <li>See the dashboard for CSV format details</li>
+                    <li>View previous predictions in your history</li>
+                    <li>Contact NetOne support for assistance</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

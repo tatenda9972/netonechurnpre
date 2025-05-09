@@ -1,0 +1,444 @@
+{% extends "layout.html" %}
+
+{% block title %}Insights - NetOne Churn Prediction System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="display-5 fw-bold">
+            <i class="fas fa-lightbulb me-3"></i>Customer Insights
+        </h1>
+        <p class="lead">
+            Visualizations and insights to help you understand customer churn patterns.
+        </p>
+    </div>
+</div>
+
+{% if predictions %}
+    {% if recent_prediction %}
+    <!-- Overall Churn Distribution -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Churn Distribution
+                    </h5>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <div class="chart-container">
+                        <canvas id="churn-pie-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Feature Importance
+                    </h5>
+                    <small class="text-muted">Based on the most recent prediction</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="feature-importance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demographic Analysis -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Demographic Analysis
+                    </h5>
+                    <small class="text-muted">Based on your most recent prediction</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="gender-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="location-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="plan-type-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Numerical Distribution -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Feature Distributions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="age-histogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="tenure-months-histogram"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="data-usage-gb-histogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="monthly-bill-histogram"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Historical Trends -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Churn Rate Over Time
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="churn-timeline-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Findings -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Key Findings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if recent_prediction %}
+                            {% set feature_importance = recent_prediction.get_feature_importance() %}
+                            {% set details = recent_prediction.get_details() %}
+                            {% set customer_data = details.customer_predictions %}
+                            
+                            <!-- Generate insights based on the data -->
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="text-primary">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Overall Churn Risk
+                                        </h5>
+                                        <p>
+                                            Your most recent prediction shows a <strong>{{ "%.1f"|format(recent_prediction.churn_count / recent_prediction.total_customers * 100) }}%</strong> churn rate,
+                                            with <strong>{{ recent_prediction.churn_count }}</strong> out of <strong>{{ recent_prediction.total_customers }}</strong> 
+                                            customers identified as at risk of churning.
+                                        </p>
+                                        {% if predictions|length > 1 %}
+                                            {% set avg_churn = sum(p.churn_count / p.total_customers * 100 for p in predictions) / predictions|length %}
+                                            {% set last_churn = recent_prediction.churn_count / recent_prediction.total_customers * 100 %}
+                                            {% if last_churn > avg_churn %}
+                                                <p class="text-danger">
+                                                    <i class="fas fa-arrow-up me-1"></i>This is higher than your historical average of <strong>{{ "%.1f"|format(avg_churn) }}%</strong>.
+                                                </p>
+                                            {% else %}
+                                                <p class="text-success">
+                                                    <i class="fas fa-arrow-down me-1"></i>This is lower than your historical average of <strong>{{ "%.1f"|format(avg_churn) }}%</strong>.
+                                                </p>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="text-primary">
+                                            <i class="fas fa-chart-bar me-2"></i>Key Drivers of Churn
+                                        </h5>
+                                        <p>
+                                            Based on the feature importance analysis, the following factors have the strongest influence on customer churn:
+                                        </p>
+                                        <ol>
+                                            {% for feature in feature_importance.features[:3] %}
+                                                <li><strong>{{ feature }}</strong></li>
+                                            {% endfor %}
+                                        </ol>
+                                        <p>
+                                            Focus your retention strategies on these key areas to reduce churn most effectively.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="text-primary">
+                                            <i class="fas fa-user-alt me-2"></i>Customer Segmentation
+                                        </h5>
+                                        <p>
+                                            High-risk customer profile:
+                                        </p>
+                                        <ul>
+                                            {% if 'Gender' in customer_data.items()|map(attribute='1')|first %}
+                                                {% set gender_counts = {} %}
+                                                {% for id, row in customer_data.items() %}
+                                                    {% if row.prediction == 1 %}
+                                                        {% if row.Gender in gender_counts %}
+                                                            {% set _ = gender_counts.update({row.Gender: gender_counts[row.Gender] + 1}) %}
+                                                        {% else %}
+                                                            {% set _ = gender_counts.update({row.Gender: 1}) %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% set top_gender = gender_counts|dictsort(by='value')|reverse|first %}
+                                                <li>
+                                                    <strong>Gender:</strong> Predominantly {{ top_gender[0] }}
+                                                    ({{ "%.1f"|format(top_gender[1] / recent_prediction.churn_count * 100) }}% of churned customers)
+                                                </li>
+                                            {% endif %}
+                                            
+                                            {% if 'Location' in customer_data.items()|map(attribute='1')|first %}
+                                                {% set location_counts = {} %}
+                                                {% for id, row in customer_data.items() %}
+                                                    {% if row.prediction == 1 %}
+                                                        {% if row.Location in location_counts %}
+                                                            {% set _ = location_counts.update({row.Location: location_counts[row.Location] + 1}) %}
+                                                        {% else %}
+                                                            {% set _ = location_counts.update({row.Location: 1}) %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% set top_location = location_counts|dictsort(by='value')|reverse|first %}
+                                                <li>
+                                                    <strong>Location:</strong> Mostly from {{ top_location[0] }}
+                                                    ({{ "%.1f"|format(top_location[1] / recent_prediction.churn_count * 100) }}% of churned customers)
+                                                </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="text-primary">
+                                            <i class="fas fa-lightbulb me-2"></i>Recommended Actions
+                                        </h5>
+                                        <p>
+                                            Based on the analysis, consider the following actions:
+                                        </p>
+                                        <ul>
+                                            <li>Implement targeted retention campaigns for high-risk segments</li>
+                                            <li>Review pricing and service offerings</li>
+                                            <li>Improve customer support and complaint resolution</li>
+                                            <li>Develop loyalty programs to reward long-term customers</li>
+                                        </ul>
+                                        <p>
+                                            <a href="{{ url_for('prediction_result', prediction_id=recent_prediction.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye me-1"></i>View Detailed Recommendations
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>Make a prediction to see detailed insights about your customer data.
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Prepare JSON data for charts -->
+    <script id="chart-data" type="application/json">
+    {
+        {% if recent_prediction %}
+            {% set feature_importance = recent_prediction.get_feature_importance() %}
+            {% set details = recent_prediction.get_details() %}
+            {% set customer_data = details.customer_predictions %}
+            
+            "churnDistribution": {
+                "churned": {{ recent_prediction.churn_count }},
+                "retained": {{ recent_prediction.total_customers - recent_prediction.churn_count }}
+            },
+            "featureImportance": {{ feature_importance|tojson }},
+            "confusionMatrix": {{ details.confusion_matrix|default('null')|tojson }},
+            
+            {% if 'Gender' in customer_data.items()|map(attribute='1')|first %}
+                {% set gender_data = {} %}
+                {% for id, row in customer_data.items() %}
+                    {% if row.Gender in gender_data %}
+                        {% set _ = gender_data.update({row.Gender: gender_data[row.Gender] + 1}) %}
+                    {% else %}
+                        {% set _ = gender_data.update({row.Gender: 1}) %}
+                    {% endif %}
+                {% endfor %}
+                "demographics": {
+                    "gender": {
+                        "labels": {{ gender_data.keys()|list|tojson }},
+                        "values": {{ gender_data.values()|list|tojson }}
+                    },
+                    
+                    {% if 'Location' in customer_data.items()|map(attribute='1')|first %}
+                        {% set location_data = {} %}
+                        {% for id, row in customer_data.items() %}
+                            {% if row.Location in location_data %}
+                                {% set _ = location_data.update({row.Location: location_data[row.Location] + 1}) %}
+                            {% else %}
+                                {% set _ = location_data.update({row.Location: 1}) %}
+                            {% endif %}
+                        {% endfor %}
+                        "location": {
+                            "labels": {{ location_data.keys()|list|tojson }},
+                            "values": {{ location_data.values()|list|tojson }}
+                        },
+                    {% endif %}
+                    
+                    {% if 'Plan_Type' in customer_data.items()|map(attribute='1')|first %}
+                        {% set plan_data = {} %}
+                        {% for id, row in customer_data.items() %}
+                            {% if row.Plan_Type in plan_data %}
+                                {% set _ = plan_data.update({row.Plan_Type: plan_data[row.Plan_Type] + 1}) %}
+                            {% else %}
+                                {% set _ = plan_data.update({row.Plan_Type: 1}) %}
+                            {% endif %}
+                        {% endfor %}
+                        "planType": {
+                            "labels": {{ plan_data.keys()|list|tojson }},
+                            "values": {{ plan_data.values()|list|tojson }}
+                        }
+                    {% endif %}
+                },
+            {% endif %}
+            
+            "histograms": {
+                {% if 'Age' in customer_data.items()|map(attribute='1')|first %}
+                    "Age": {{ customer_data|tojson }},
+                {% endif %}
+                {% if 'Tenure_Months' in customer_data.items()|map(attribute='1')|first %}
+                    "Tenure_Months": {{ customer_data|tojson }},
+                {% endif %}
+                {% if 'Data_Usage_GB' in customer_data.items()|map(attribute='1')|first %}
+                    "Data_Usage_GB": {{ customer_data|tojson }},
+                {% endif %}
+                {% if 'Monthly_Bill' in customer_data.items()|map(attribute='1')|first %}
+                    "Monthly_Bill": {{ customer_data|tojson }}
+                {% endif %}
+            },
+        {% endif %}
+        
+        "churnTimeline": {
+            "dates": [
+                {% for prediction in predictions %}
+                    "{{ prediction.created_at.strftime('%Y-%m-%d') }}"{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            "rates": [
+                {% for prediction in predictions %}
+                    {{ prediction.churn_count / prediction.total_customers * 100 }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }
+    }
+    </script>
+
+{% else %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i> You haven't made any predictions yet. 
+                        <a href="{{ url_for('prediction') }}" class="alert-link">Make your first prediction</a> to see insights.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>About Insights
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-chart-bar me-2"></i>Understanding Your Data</h5>
+                        <p>The insights page provides visual analysis of your customer data, helping you:</p>
+                        <ul>
+                            <li>Identify key factors driving customer churn</li>
+                            <li>Understand customer demographics and behavior patterns</li>
+                            <li>Track churn rates over time</li>
+                            <li>Develop targeted retention strategies</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-lightbulb me-2"></i>Using These Insights</h5>
+                        <p>Apply these insights to improve your customer retention:</p>
+                        <ul>
+                            <li>Refine your service offerings based on customer needs</li>
+                            <li>Create targeted promotions for high-risk segments</li>
+                            <li>Improve areas identified as driving churn</li>
+                            <li>Monitor the impact of your retention initiatives over time</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('prediction') }}" class="btn btn-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Make a New Prediction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
