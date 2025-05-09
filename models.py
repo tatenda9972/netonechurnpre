@@ -45,10 +45,23 @@ class Prediction(db.Model):
             if 'customer_predictions' not in details or not isinstance(details['customer_predictions'], dict):
                 details['customer_predictions'] = {}
                 
-            # Ensure each customer prediction item has the expected structure
-            for customer_id, prediction in details['customer_predictions'].items():
-                if not isinstance(prediction, dict):
-                    details['customer_predictions'][customer_id] = {'prediction': 0, 'churn_probability': 0}
+            # Ensure each customer prediction item has the expected structure and required fields
+            for customer_id, prediction_data in details['customer_predictions'].items():
+                # Check if prediction_data is a dictionary
+                if not isinstance(prediction_data, dict):
+                    # If not a dict, create a new default dict
+                    details['customer_predictions'][customer_id] = {
+                        'prediction': 0,
+                        'churn_probability': 0.0,
+                        'Customer_ID': f"CUST{customer_id}"
+                    }
+                else:
+                    # Make sure required fields exist in the dict
+                    if 'prediction' not in prediction_data:
+                        prediction_data['prediction'] = 0
+                    
+                    if 'churn_probability' not in prediction_data:
+                        prediction_data['churn_probability'] = 0.0
             
             return details
         except Exception as e:

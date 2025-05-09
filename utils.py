@@ -64,7 +64,10 @@ def preprocess_csv(df):
                 data[col] = [f"C{i:04d}" for i in range(1, len(data) + 1)]
                 print(f"Added missing column with generated values: {col}")
     
-    # Columns to keep for prediction
+    # Store all original columns (for display purposes in results)
+    original_columns = data.columns.tolist()
+    
+    # Columns to keep for prediction and display
     columns_to_keep = core_columns.copy()
     
     # Add Churn column if it exists (for training)
@@ -74,17 +77,29 @@ def preprocess_csv(df):
     else:
         print("Churn column doesn't exist - using prediction mode only")
     
-    # Keep only required columns for the prediction model
+    # Add optional columns if they exist (for better results display)
+    for col in original_columns:
+        if col not in columns_to_keep and col not in ['prediction', 'churn_probability']:
+            columns_to_keep.append(col)
+    
+    # Keep all available columns
     try:
-        data = data[columns_to_keep]
-        print(f"Kept columns for prediction: {columns_to_keep}")
+        # Make sure we at least have all core columns
+        available_core_columns = [col for col in core_columns if col in data.columns]
+        if len(available_core_columns) < len(core_columns):
+            print(f"Warning: Missing core columns: {set(core_columns) - set(available_core_columns)}")
+            
+        # Keep all available columns that exist
+        available_columns = [col for col in columns_to_keep if col in data.columns]
+        data = data[available_columns]
+        print(f"Using columns for prediction and display: {available_columns}")
     except KeyError as e:
         print(f"Error selecting columns: {e}")
         print(f"Available columns: {data.columns.tolist()}")
         # If we can't select all columns, use what we have
         available_columns = [col for col in columns_to_keep if col in data.columns]
         data = data[available_columns]
-        print(f"Using available columns: {available_columns}")
+        print(f"Using available columns after error: {available_columns}")
     
     # Fill missing values
     data['Age'].fillna(data['Age'].median(), inplace=True)

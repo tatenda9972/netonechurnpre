@@ -310,9 +310,30 @@ def configure_routes(app):
             details = prediction.get_details()
             feature_importance = prediction.get_feature_importance()
             
+            # Add detailed debug logging
+            print(f"Prediction details structure: {list(details.keys())}")
+            
             # Make sure customer_predictions exists and is a dictionary
-            if 'customer_predictions' not in details or not isinstance(details['customer_predictions'], dict):
+            if 'customer_predictions' not in details:
+                print("No customer_predictions found in details - adding empty dict")
                 details['customer_predictions'] = {}
+            elif not isinstance(details['customer_predictions'], dict):
+                print(f"customer_predictions is not a dict: {type(details['customer_predictions'])}")
+                details['customer_predictions'] = {}
+                
+            # Get a sample of the data for debugging
+            if details['customer_predictions']:
+                sample_keys = list(details['customer_predictions'].keys())[:2]
+                for key in sample_keys:
+                    print(f"Sample row {key}: {details['customer_predictions'][key]}")
+                    # Ensure each row has required fields
+                    row_data = details['customer_predictions'][key]
+                    if isinstance(row_data, dict):
+                        # Add missing fields with defaults if necessary
+                        if 'prediction' not in row_data:
+                            row_data['prediction'] = 0
+                        if 'churn_probability' not in row_data:
+                            row_data['churn_probability'] = 0.0
             
             # Generate recent predictions list for the form view
             recent_predictions = Prediction.query.filter_by(user_id=current_user.id) \
@@ -329,7 +350,11 @@ def configure_routes(app):
             )
         except Exception as e:
             print(f"Error in prediction_result: {str(e)}")
-            flash(f"Error viewing prediction details: {str(e)}", "danger")
+            # Add more detailed error logging
+            import traceback
+            traceback.print_exc()
+            # Create a user-friendly error message
+            flash("An error occurred while trying to view the prediction details. The issue has been logged.", "danger")
             return redirect(url_for('history'))
     
     @app.route('/history')
