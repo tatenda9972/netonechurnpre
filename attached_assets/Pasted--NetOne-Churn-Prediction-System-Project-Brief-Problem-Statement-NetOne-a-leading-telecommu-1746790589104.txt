@@ -1,0 +1,77 @@
+📊 NetOne Churn Prediction System – Project Brief
+🧩 Problem Statement
+NetOne, a leading telecommunications provider, is experiencing significant customer churn due to competitive pricing, dissatisfaction with services, and market changes. The inability to predict which customers are likely to leave has resulted in revenue losses and reduced market share. To address this, a churn prediction system is required to help identify at-risk customers and implement proactive retention strategies.
+________________________________________
+🎯 Project Aim
+Develop a reliable, offline churn prediction web application for NetOne using Python and Flask. The system should:
+•	Accurately predict customer churn.
+•	Deliver actionable insights.
+•	Provide a secure, professional, and modern interface.
+•	Run offline on Replit with no cloud dependencies.
+________________________________________
+✅ Project Objectives
+•	Develop a machine learning-based churn prediction model.
+•	Identify at-risk customers using uploaded CSV data.
+•	Provide retention recommendations based on prediction outcomes.
+•	Analyze key factors contributing to churn.
+•	Offer interactive data visualizations and downloadable reports.
+•	To improve retention rates
+•	To identify key drivers of churn
+•	To provide actionable insights
+
+________________________________________
+🛠 Tools & Technologies
+•	Backend: Python, Flask
+•	ML Libraries: Scikit-learn, XGBoost, TensorFlow, Keras
+•	Data Processing: Pandas, NumPy
+•	Visualization: Matplotlib, Seaborn, Plotly
+•	Deployment: Replit (Offline support)
+________________________________________
+🧱 System Features & Pages
+Page	Description
+Homepage	Introduction, system overview, navigation
+Login	Secure user login (required for access)
+Register	New user registration with email validation and password hashing
+Dashboard	Central hub with quick links to prediction, history, insights
+Prediction	Upload CSV data for churn prediction, view result, download, or start new
+History	Store and view previously uploaded predictions
+Insights	Graphs and trends (Pie Charts, Line Graphs, Histograms) showing churn data
+Profile	Manage account, change password, logout
+Admin Options	Delete previous predictions, manage CSV uploads
+________________________________________
+🔐 Security & Validation
+•	Passwords must be securely hashed (e.g., using werkzeug.security or bcrypt).
+•	Email format must be validated during registration.
+•	Only authenticated users can access the dashboard and predictions.
+________________________________________
+📊 Machine Learning Model Requirements
+•	Input: CSV Upload (customer data)
+•	Output: Churn prediction labels + recommendation messages
+•	Display:
+o	Model Accuracy
+o	Precision, Recall, F1-Score
+o	Confusion Matrix
+o	Accuracy Curve
+________________________________________
+📈 Visualizations
+•	Pie charts showing churned vs. retained customers.
+•	Histograms showing distribution of key features.
+•	Line graphs for churn trends over time.
+•	Dynamic charts based on current prediction results.
+________________________________________
+🔄 Prediction Handling
+•	Users can upload a new CSV file.
+•	System should clear previous data when a new CSV is uploaded (optional delete button).
+•	Display prediction results immediately.
+•	Option to download the prediction results (e.g., as CSV or PDF).
+•	Display recommendations dynamically based on prediction outcomes.
+________________________________________
+⚙️ Next Steps
+1.	Implement the Flask backend with authentication and hashed password storage.
+2.	Build a modular ML model that outputs both predictions and metrics.
+3.	Create frontend templates for all pages (use Jinja2 and Bootstrap/Tailwind CSS for professional UI).
+4.	Add CSV upload and download functionality.
+5.	Add charts using Plotly or Chart.js for interactivity.
+6.	Store prediction history in a local file or JSON (for offline use).
+7.	Package and test it on Replit (with offline mode).
+
