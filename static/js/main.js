@@ -173,7 +173,8 @@ function initializeCharts() {
                     const features = ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Monthly_Bill'];
                     
                     features.forEach(feature => {
-                        const elementId = feature.toLowerCase().replace('_', '-') + '-histogram';
+                        // Replace all underscores, not just the first one
+                        const elementId = feature.toLowerCase().replaceAll('_', '-') + '-histogram';
                         console.log(`Looking for element with ID: ${elementId}, exists:`, !!document.getElementById(elementId));
                         if (data.histograms[feature] && document.getElementById(elementId)) {
                             console.log(`Creating histogram for ${feature} with data:`, data.histograms[feature]);
