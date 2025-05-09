@@ -170,7 +170,12 @@
                                             customers identified as at risk of churning.
                                         </p>
                                         {% if predictions|length > 1 %}
-                                            {% set avg_churn = sum(p.churn_count / p.total_customers * 100 for p in predictions) / predictions|length %}
+                                            {% set churn_rates = [] %}
+                                            {% for p in predictions %}
+                                                {% set rate = p.churn_count / p.total_customers * 100 %}
+                                                {% set _ = churn_rates.append(rate) %}
+                                            {% endfor %}
+                                            {% set avg_churn = (churn_rates|sum) / predictions|length %}
                                             {% set last_churn = recent_prediction.churn_count / recent_prediction.total_customers * 100 %}
                                             {% if last_churn > avg_churn %}
                                                 <p class="text-danger">
