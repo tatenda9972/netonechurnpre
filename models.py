@@ -39,7 +39,18 @@ class Prediction(db.Model):
     def get_details(self):
         """Return prediction details as a dictionary with error handling"""
         try:
-            return json.loads(self.prediction_details)
+            details = json.loads(self.prediction_details)
+            
+            # Ensure customer_predictions is a dict and has proper structure
+            if 'customer_predictions' not in details or not isinstance(details['customer_predictions'], dict):
+                details['customer_predictions'] = {}
+                
+            # Ensure each customer prediction item has the expected structure
+            for customer_id, prediction in details['customer_predictions'].items():
+                if not isinstance(prediction, dict):
+                    details['customer_predictions'][customer_id] = {'prediction': 0, 'churn_probability': 0}
+            
+            return details
         except Exception as e:
             print(f"Error parsing prediction details: {str(e)}")
             return {'customer_predictions': {}, 'confusion_matrix': None}

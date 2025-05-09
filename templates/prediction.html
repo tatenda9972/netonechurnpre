@@ -153,21 +153,33 @@
                             {% set customer_data = details.customer_predictions %}
                             {% for id, row in customer_data.items() %}
                                 {% if loop.index <= 10 %}
-                                    <tr class="{{ 'table-danger' if row.prediction == 1 else '' }}">
-                                        <td>{{ row.Customer_ID }}</td>
-                                        <td>{{ row.Age }}</td>
-                                        <td>{{ row.Gender }}</td>
-                                        <td>{{ row.Location }}</td>
-                                        <td>{{ row.Tenure_Months }}</td>
-                                        <td>${{ "%.2f"|format(row.Monthly_Bill) }}</td>
+                                    <tr class="{{ 'table-danger' if row.get('prediction', 0) == 1 else '' }}">
+                                        <td>{{ row.get('Customer_ID', 'N/A') }}</td>
+                                        <td>{{ row.get('Age', 'N/A') }}</td>
+                                        <td>{{ row.get('Gender', 'N/A') }}</td>
+                                        <td>{{ row.get('Location', 'N/A') }}</td>
+                                        <td>{{ row.get('Tenure_Months', 'N/A') }}</td>
                                         <td>
-                                            {% if row.prediction == 1 %}
+                                        {% if 'Monthly_Bill' in row %}
+                                            ${{ "%.2f"|format(row.get('Monthly_Bill', 0)) }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if row.get('prediction', 0) == 1 %}
                                                 <span class="badge bg-danger">Likely to Churn</span>
                                             {% else %}
                                                 <span class="badge bg-success">Likely to Stay</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ "%.1f"|format(row.churn_probability * 100) }}%</td>
+                                        <td>
+                                        {% if 'churn_probability' in row %}
+                                            {{ "%.1f"|format(row.get('churn_probability', 0) * 100) }}%
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                        </td>
                                     </tr>
                                 {% endif %}
                             {% endfor %}

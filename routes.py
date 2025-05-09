@@ -290,24 +290,38 @@ def configure_routes(app):
     @login_required
     def prediction_result(prediction_id):
         """Display prediction results"""
-        prediction = Prediction.query.get_or_404(prediction_id)
-        
-        # Check if user owns this prediction
-        if prediction.user_id != current_user.id and not current_user.is_admin:
-            abort(403)
-        
-        # Get prediction details and feature importance
-        details = prediction.get_details()
-        feature_importance = prediction.get_feature_importance()
-        
-        return render_template(
-            'prediction.html',
-            title='Prediction Results',
-            prediction=prediction,
-            details=details,
-            feature_importance=feature_importance,
-            form=PredictionForm()
-        )
+        try:
+            prediction = Prediction.query.get_or_404(prediction_id)
+            
+            # Check if user owns this prediction
+            if prediction.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+            
+            # Get prediction details and feature importance
+            details = prediction.get_details()
+            feature_importance = prediction.get_feature_importance()
+            
+            # Make sure customer_predictions exists and is a dictionary
+            if 'customer_predictions' not in details or not isinstance(details['customer_predictions'], dict):
+                details['customer_predictions'] = {}
+            
+            # Generate recent predictions list for the form view
+            recent_predictions = Prediction.query.filter_by(user_id=current_user.id) \
+                .order_by(Prediction.created_at.desc()).limit(5).all()
+            
+            return render_template(
+                'prediction.html',
+                title='Prediction Results',
+                prediction=prediction,
+                details=details,
+                feature_importance=feature_importance,
+                form=PredictionForm(),
+                recent_predictions=recent_predictions
+            )
+        except Exception as e:
+            print(f"Error in prediction_result: {str(e)}")
+            flash(f"Error viewing prediction details: {str(e)}", "danger")
+            return redirect(url_for('history'))
     
     @app.route('/history')
     @login_required
