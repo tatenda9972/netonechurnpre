@@ -198,58 +198,153 @@ def get_retention_recommendations(prediction):
     Returns:
         list: List of recommendation dictionaries
     """
-    details = prediction.get_details()
-    df = pd.DataFrame(details['customer_predictions'])
-    
-    recommendations = []
-    
-    # High churn probability customers
-    high_risk = df[df['churn_probability'] > 0.75]
-    if len(high_risk) > 0:
-        recommendations.append({
-            'title': 'High Risk Customers',
-            'description': f'There are {len(high_risk)} customers with >75% probability of churning.',
-            'action': 'Immediate personal contact, offer special discounts or incentives.'
-        })
-    
-    # Customers with complaints
-    if 'Num_Complaints' in df.columns:
-        complaint_customers = df[(df['prediction'] == 1) & (df['Num_Complaints'] > 0)]
-        if len(complaint_customers) > 0:
+    try:
+        details = prediction.get_details()
+        
+        # Print debug info about the data structure
+        print(f"Building recommendations from details with keys: {list(details.keys())}")
+        
+        # Convert to proper dataframe format based on the structure
+        if 'customer_predictions' in details:
+            customer_data = details['customer_predictions']
+            print(f"Customer predictions data type: {type(customer_data)}")
+            
+            # Handle different data structures that might come from JSON or DB
+            if isinstance(customer_data, dict):
+                # If it's a nested dictionary, we need to normalize it
+                rows = []
+                for customer_id, data in customer_data.items():
+                    if isinstance(data, dict):
+                        # Make sure each row has the required fields
+                        if 'churn_probability' not in data:
+                            data['churn_probability'] = 0.0
+                        if 'prediction' not in data:
+                            data['prediction'] = 0
+                        rows.append(data)
+                
+                if rows:
+                    df = pd.DataFrame(rows)
+                else:
+                    # No valid data rows found
+                    print("No valid customer data rows found for recommendations")
+                    df = pd.DataFrame({'churn_probability': [], 'prediction': []})
+            else:
+                # It might already be a dataframe or incompatible data
+                print(f"Unexpected customer_predictions structure: {type(customer_data)}")
+                df = pd.DataFrame({'churn_probability': [0.0], 'prediction': [0]})
+        else:
+            # No customer predictions found at all
+            print("No customer_predictions key found in details")
+            df = pd.DataFrame({'churn_probability': [0.0], 'prediction': [0]})
+            
+        # Print column names for debugging
+        print(f"DataFrame columns: {df.columns.tolist() if not df.empty else 'empty dataframe'}")
+        
+        recommendations = []
+        
+        # Make sure the dataframe has the expected columns
+        if 'churn_probability' in df.columns and not df.empty:
+            # High churn probability customers
+            high_risk = df[df['churn_probability'] > 0.75]
+            if len(high_risk) > 0:
+                recommendations.append({
+                    'title': 'High Risk Customers',
+                    'description': f'There are {len(high_risk)} customers with >75% probability of churning.',
+                    'action': 'Immediate personal contact, offer special discounts or incentives.'
+                })
+        else:
+            print("DataFrame doesn't have churn_probability column or is empty")
+        
+        # Safe check for all the following operations
+        if not df.empty and 'prediction' in df.columns:
+            # Customers with complaints
+            if 'Num_Complaints' in df.columns:
+                try:
+                    complaint_customers = df[(df['prediction'] == 1) & (df['Num_Complaints'] > 0)]
+                    if len(complaint_customers) > 0:
+                        recommendations.append({
+                            'title': 'Address Customer Complaints',
+                            'description': f'{len(complaint_customers)} customers with complaints are predicted to churn.',
+                            'action': 'Review and resolve complaints, offer compensation or special attention.'
+                        })
+                except Exception as e:
+                    print(f"Error processing complaints data: {e}")
+            
+            # Long-term customers at risk
+            if 'Tenure_Months' in df.columns:
+                try:
+                    loyal_customers = df[(df['prediction'] == 1) & (df['Tenure_Months'] > 24)]
+                    if len(loyal_customers) > 0:
+                        recommendations.append({
+                            'title': 'Loyal Customers at Risk',
+                            'description': f'{len(loyal_customers)} customers with >2 years tenure are predicted to churn.',
+                            'action': 'Implement a loyalty program with exclusive benefits and personalized offers.'
+                        })
+                except Exception as e:
+                    print(f"Error processing tenure data: {e}")
+            
+            # High-value customers
+            if 'Monthly_Bill' in df.columns:
+                try:
+                    avg_bill = df['Monthly_Bill'].mean()
+                    high_value = df[(df['prediction'] == 1) & (df['Monthly_Bill'] > avg_bill)]
+                    if len(high_value) > 0:
+                        recommendations.append({
+                            'title': 'High-Value Customers',
+                            'description': f'{len(high_value)} high-value customers are predicted to churn.',
+                            'action': 'Provide premium services or upgrades at no additional cost.'
+                        })
+                except Exception as e:
+                    print(f"Error processing bill data: {e}")
+            
+            # General recommendation - safe calculation with error handling
+            try:
+                churn_count = df[df['prediction'] == 1].shape[0]
+                if len(df) > 0:  # Avoid division by zero
+                    churn_rate = churn_count / len(df) * 100
+                    recommendations.append({
+                        'title': 'Overall Churn Rate',
+                        'description': f'The predicted churn rate is {churn_rate:.2f}%.',
+                        'action': 'Review pricing strategy and service quality to improve customer satisfaction.'
+                    })
+                else:
+                    recommendations.append({
+                        'title': 'No Data Available',
+                        'description': 'Unable to calculate churn rate with the current dataset.',
+                        'action': 'Upload a dataset with customer information for accurate predictions.'
+                    })
+            except Exception as e:
+                print(f"Error calculating overall churn rate: {e}")
+                recommendations.append({
+                    'title': 'Data Analysis Error',
+                    'description': 'There was an error analyzing the churn data.',
+                    'action': 'Try uploading a different dataset with the required fields.'
+                })
+        else:
+            # If dataframe is empty or missing prediction column
             recommendations.append({
-                'title': 'Address Customer Complaints',
-                'description': f'{len(complaint_customers)} customers with complaints are predicted to churn.',
-                'action': 'Review and resolve complaints, offer compensation or special attention.'
+                'title': 'Prediction Data Missing',
+                'description': 'No valid prediction data is available for recommendations.',
+                'action': 'Upload a new dataset with complete customer information.'
             })
-    
-    # Long-term customers at risk
-    if 'Tenure_Months' in df.columns:
-        loyal_customers = df[(df['prediction'] == 1) & (df['Tenure_Months'] > 24)]
-        if len(loyal_customers) > 0:
+        
+        # If no recommendations were generated, add a default one
+        if not recommendations:
             recommendations.append({
-                'title': 'Loyal Customers at Risk',
-                'description': f'{len(loyal_customers)} customers with >2 years tenure are predicted to churn.',
-                'action': 'Implement a loyalty program with exclusive benefits and personalized offers.'
+                'title': 'No Recommendations Available',
+                'description': 'The system could not generate recommendations from the current data.',
+                'action': 'Try uploading a dataset with more customer information.'
             })
-    
-    # High-value customers
-    if 'Monthly_Bill' in df.columns:
-        avg_bill = df['Monthly_Bill'].mean()
-        high_value = df[(df['prediction'] == 1) & (df['Monthly_Bill'] > avg_bill)]
-        if len(high_value) > 0:
-            recommendations.append({
-                'title': 'High-Value Customers',
-                'description': f'{len(high_value)} high-value customers are predicted to churn.',
-                'action': 'Provide premium services or upgrades at no additional cost.'
-            })
-    
-    # General recommendation
-    churn_count = df[df['prediction'] == 1].shape[0]
-    churn_rate = churn_count / len(df) * 100
-    recommendations.append({
-        'title': 'Overall Churn Rate',
-        'description': f'The predicted churn rate is {churn_rate:.2f}%.',
-        'action': 'Review pricing strategy and service quality to improve customer satisfaction.'
-    })
-    
-    return recommendations
+            
+        return recommendations
+        
+    except Exception as e:
+        print(f"Error in get_retention_recommendations: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return a default set of recommendations in case of error
+        return [{
+            'title': 'Data Processing Error',
+            'description': 'There was an error processing the prediction data for recommendations.',
+            'action': 'Try uploading a new CSV file with the required customer fields.'
+        }]

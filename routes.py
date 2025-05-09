@@ -189,13 +189,35 @@ def configure_routes(app):
                 
                 # Store prediction details with error handling
                 try:
+                    # Check if the prediction field exists in each row and add if missing
+                    customer_df = result['customer_predictions']
+                    
+                    # Ensure churn_probability exists and has no nulls
+                    if 'churn_probability' not in customer_df.columns:
+                        print("Adding missing churn_probability column")
+                        customer_df['churn_probability'] = 0.0
+                    
+                    # Ensure prediction column exists and has no nulls
+                    if 'prediction' not in customer_df.columns:
+                        print("Adding missing prediction column")
+                        customer_df['prediction'] = 0
+                    
                     # Convert DataFrame to dictionary in a way that preserves row data
                     # Using orient='index' makes each row a dictionary with column names as keys
-                    customer_predictions_dict = result['customer_predictions'].to_dict(orient='index')
+                    customer_predictions_dict = customer_df.to_dict(orient='index')
                     
                     # Print sample of what's being saved for debugging
                     sample_keys = list(customer_predictions_dict.keys())[:2]
                     for key in sample_keys:
+                        row_data = customer_predictions_dict[key]
+                        # Check each row has required fields
+                        if 'churn_probability' not in row_data:
+                            print(f"Adding missing churn_probability to row {key}")
+                            customer_predictions_dict[key]['churn_probability'] = 0.0
+                        if 'prediction' not in row_data:
+                            print(f"Adding missing prediction to row {key}")
+                            customer_predictions_dict[key]['prediction'] = 0
+                        
                         print(f"Sample row {key}: {customer_predictions_dict[key]}")
                     
                     prediction_details = {
@@ -204,6 +226,8 @@ def configure_routes(app):
                     }
                 except Exception as e:
                     print(f"Error creating prediction details: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
                     prediction_details = {
                         'customer_predictions': {},
                         'confusion_matrix': None
