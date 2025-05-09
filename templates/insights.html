@@ -131,28 +131,84 @@
                     <h5 class="card-title mb-0">
                         <i class="fas fa-chart-bar me-2"></i>Key Drivers of Churn
                     </h5>
-                    <small class="text-muted">Distribution analysis for customers likely to churn</small>
+                    <small class="text-muted">Comparing distributions between churned and retained customers</small>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="chart-container">
+                    <!-- Feature tabs -->
+                    <ul class="nav nav-tabs mb-4" id="featureTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="age-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#age-panel" type="button" role="tab" 
+                                    aria-controls="age-panel" aria-selected="true">
+                                Age
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tenure-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#tenure-panel" type="button" role="tab" 
+                                    aria-controls="tenure-panel" aria-selected="false">
+                                Tenure (Months)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="data-usage-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#data-usage-panel" type="button" role="tab" 
+                                    aria-controls="data-usage-panel" aria-selected="false">
+                                Data Usage (GB)
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content" id="featureTabContent">
+                        <div class="tab-pane fade show active" id="age-panel" role="tabpanel" aria-labelledby="age-tab">
+                            <div class="chart-container" style="height: 400px;">
                                 <canvas id="age-histogram"></canvas>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="chart-container">
-                                <canvas id="tenure-months-histogram"></canvas>
+                            <div class="mt-3">
+                                <h6 class="fw-bold">Analysis</h6>
+                                <p>
+                                    This chart shows the age distribution of customers, comparing those who churned (red) 
+                                    versus those who remained (green). The percentages allow you to identify age groups 
+                                    with disproportionately high churn rates.
+                                </p>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="chart-container">
+                        
+                        <div class="tab-pane fade" id="tenure-panel" role="tabpanel" aria-labelledby="tenure-tab">
+                            <div class="chart-container" style="height: 400px;">
+                                <canvas id="tenure-months-histogram"></canvas>
+                            </div>
+                            <div class="mt-3">
+                                <h6 class="fw-bold">Analysis</h6>
+                                <p>
+                                    Customer tenure (months with your company) often strongly correlates with churn likelihood.
+                                    This chart compares the tenure distribution between customers who churned versus those who stayed.
+                                    Look for specific tenure periods where churn risk is elevated.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="data-usage-panel" role="tabpanel" aria-labelledby="data-usage-tab">
+                            <div class="chart-container" style="height: 400px;">
                                 <canvas id="data-usage-gb-histogram"></canvas>
+                            </div>
+                            <div class="mt-3">
+                                <h6 class="fw-bold">Analysis</h6>
+                                <p>
+                                    Data usage patterns often reveal customer satisfaction and value perception.
+                                    This chart shows the distribution of data usage (GB) between churned and retained customers.
+                                    Significant differences may indicate pricing or plan fit issues.
+                                </p>
                             </div>
                         </div>
                     </div>
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle me-2"></i>These histograms show the distribution of key factors among <strong>churned customers only</strong>. Use these insights to identify patterns in customer segments that are at high risk of churning.
+                    
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>How to interpret:</strong> These comparative histograms show the percentage distribution of 
+                        churned customers (red) versus retained customers (green) across different value ranges. 
+                        Where the red bars are significantly taller than green, those values represent higher churn risk.
                     </div>
                 </div>
             </div>
