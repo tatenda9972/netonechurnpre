@@ -89,6 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize charts if they exist on the page
     initializeCharts();
+    
+    // Initialize customer data table with pagination and filtering
+    initializeCustomerTable();
 });
 
 // Function to initialize charts on the page
@@ -212,4 +215,142 @@ function copyToClipboard(text) {
     setTimeout(() => {
         message.remove();
     }, 2000);
+}
+
+// Function to initialize customer data table with pagination and filtering
+function initializeCustomerTable() {
+    const customerTable = document.getElementById('customerTable');
+    if (!customerTable) return;
+    
+    const allCustomerData = document.getElementById('allCustomerData');
+    const customerRows = allCustomerData ? allCustomerData.querySelectorAll('.customer-row') : [];
+    const customerTableBody = document.getElementById('customerTableBody');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const churnFilterToggle = document.getElementById('churnFilterToggle');
+    const rowsToDisplay = document.getElementById('rowsToDisplay');
+    const visibleRowCount = document.getElementById('visibleRowCount');
+    const totalRowCount = document.getElementById('totalRowCount');
+    
+    let displayedRows = 10;
+    let isChurnFilterOn = false;
+    let maxRows = 10;
+    
+    // Format bill value with dollar sign
+    function formatBill(bill) {
+        if (bill === 'N/A' || bill === null || bill === undefined) return 'N/A';
+        return '$' + parseFloat(bill).toFixed(2);
+    }
+    
+    // Format probability value with percentage
+    function formatProbability(probability) {
+        if (probability === 'N/A' || probability === null || probability === undefined) return 'N/A';
+        return parseFloat(probability).toFixed(1) + '%';
+    }
+    
+    // Create table row HTML
+    function createRowHTML(rowData) {
+        const isChurning = rowData.getAttribute('data-is-churning') === '1';
+        const trClass = isChurning ? 'table-danger' : '';
+        const predictionBadge = isChurning ? 
+            '<span class="badge bg-danger">Likely to Churn</span>' : 
+            '<span class="badge bg-success">Likely to Stay</span>';
+        
+        return `
+            <tr class="${trClass}" data-is-churning="${isChurning ? '1' : '0'}">
+                <td>${rowData.getAttribute('data-id')}</td>
+                <td>${rowData.getAttribute('data-age')}</td>
+                <td>${rowData.getAttribute('data-gender')}</td>
+                <td>${rowData.getAttribute('data-location')}</td>
+                <td>${rowData.getAttribute('data-tenure')}</td>
+                <td>${formatBill(rowData.getAttribute('data-bill'))}</td>
+                <td>${predictionBadge}</td>
+                <td>${formatProbability(rowData.getAttribute('data-probability'))}</td>
+            </tr>
+        `;
+    }
+    
+    // Update the displayed row counter
+    function updateRowCount(displayedRowCount, totalAvailableRows) {
+        if (visibleRowCount) visibleRowCount.textContent = displayedRowCount;
+        if (totalRowCount) totalRowCount.textContent = totalAvailableRows;
+    }
+    
+    // Update the table with filtered and limited rows
+    function updateTable() {
+        if (!customerTableBody || !customerRows.length) return;
+        
+        // Clear current table
+        customerTableBody.innerHTML = '';
+        
+        // Count total available rows after applying filter
+        let totalAvailableRows = 0;
+        let rowsAdded = 0;
+        
+        // Add rows to the table up to the limit
+        for (let i = 0; i < customerRows.length; i++) {
+            const row = customerRows[i];
+            const isChurning = row.getAttribute('data-is-churning') === '1';
+            
+            // Apply churn filter if active
+            if (isChurnFilterOn && !isChurning) continue;
+            
+            totalAvailableRows++;
+            
+            // Only add rows up to current display limit
+            if (rowsAdded < displayedRows) {
+                customerTableBody.innerHTML += createRowHTML(row);
+                rowsAdded++;
+            }
+        }
+        
+        // Update displayed row count
+        updateRowCount(rowsAdded, totalAvailableRows);
+        
+        // Update load more button visibility
+        if (loadMoreBtn) {
+            if (rowsAdded >= totalAvailableRows) {
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.classList.add('disabled');
+            } else {
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.classList.remove('disabled');
+            }
+        }
+    }
+    
+    // Load more rows when the button is clicked
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            // Increase displayed rows by the current increment
+            displayedRows += maxRows;
+            updateTable();
+        });
+    }
+    
+    // Toggle filter to show only customers likely to churn
+    if (churnFilterToggle) {
+        churnFilterToggle.addEventListener('change', function() {
+            isChurnFilterOn = this.checked;
+            // Reset displayed rows when filter changes
+            displayedRows = maxRows;
+            updateTable();
+        });
+    }
+    
+    // Change the number of rows to display
+    if (rowsToDisplay) {
+        rowsToDisplay.addEventListener('change', function() {
+            const value = this.value;
+            if (value === 'all') {
+                displayedRows = 9999; // Effectively show all rows
+            } else {
+                maxRows = parseInt(value, 10);
+                displayedRows = maxRows;
+            }
+            updateTable();
+        });
+    }
+    
+    // Initialize the table on page load
+    updateTable();
 }
