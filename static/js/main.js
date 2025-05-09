@@ -169,18 +169,30 @@ function initializeCharts() {
                 
                 // Create histograms for numeric features
                 if (data.histograms) {
+                    console.log("Histogram data available:", data.histograms);
                     const features = ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Monthly_Bill'];
                     
                     features.forEach(feature => {
                         const elementId = feature.toLowerCase().replace('_', '-') + '-histogram';
+                        console.log(`Looking for element with ID: ${elementId}, exists:`, !!document.getElementById(elementId));
                         if (data.histograms[feature] && document.getElementById(elementId)) {
-                            createHistogram(
-                                elementId,
-                                data.histograms[feature],
-                                feature
-                            );
+                            console.log(`Creating histogram for ${feature} with data:`, data.histograms[feature]);
+                            try {
+                                createHistogram(
+                                    elementId,
+                                    data.histograms[feature],
+                                    feature
+                                );
+                                console.log(`Histogram for ${feature} created successfully`);
+                            } catch (err) {
+                                console.error(`Error creating histogram for ${feature}:`, err);
+                            }
+                        } else {
+                            console.warn(`Cannot create histogram for ${feature}: element or data missing`);
                         }
                     });
+                } else {
+                    console.warn("No histogram data available in the chart data");
                 }
             } catch (error) {
                 console.error('Error initializing charts:', error);

@@ -139,25 +139,58 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="age-tab" data-bs-toggle="tab" 
                                     data-bs-target="#age-panel" type="button" role="tab" 
-                                    aria-controls="age-panel" aria-selected="true">
+                                    aria-controls="age-panel" aria-selected="true"
+                                    onclick="refreshChart('age-histogram', 'Age')">
                                 Age
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tenure-tab" data-bs-toggle="tab" 
                                     data-bs-target="#tenure-panel" type="button" role="tab" 
-                                    aria-controls="tenure-panel" aria-selected="false">
+                                    aria-controls="tenure-panel" aria-selected="false"
+                                    onclick="refreshChart('tenure-months-histogram', 'Tenure_Months')">
                                 Tenure (Months)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="data-usage-tab" data-bs-toggle="tab" 
                                     data-bs-target="#data-usage-panel" type="button" role="tab" 
-                                    aria-controls="data-usage-panel" aria-selected="false">
+                                    aria-controls="data-usage-panel" aria-selected="false"
+                                    onclick="refreshChart('data-usage-gb-histogram', 'Data_Usage_GB')">
                                 Data Usage (GB)
                             </button>
                         </li>
                     </ul>
+                    
+                    <script>
+                        // Function to refresh a specific chart when tab is clicked
+                        function refreshChart(elementId, feature) {
+                            // Wait for the tab panel to become visible
+                            setTimeout(() => {
+                                const chartData = document.getElementById('chart-data');
+                                if (chartData && document.getElementById(elementId)) {
+                                    try {
+                                        const data = JSON.parse(chartData.textContent);
+                                        if (data.histograms && data.histograms[feature]) {
+                                            console.log(`Tab clicked: refreshing ${feature} chart`);
+                                            createHistogram(elementId, data.histograms[feature], feature);
+                                        } else {
+                                            console.warn(`No data available for ${feature} histogram`);
+                                            const container = document.getElementById(elementId).parentNode;
+                                            container.innerHTML = `<div class="alert alert-info">No data available for ${feature} histogram.</div>`;
+                                        }
+                                    } catch (error) {
+                                        console.error('Error refreshing chart:', error);
+                                    }
+                                }
+                            }, 50); // Small delay to ensure tab transition has occurred
+                        }
+                        
+                        // Initial rendering of the Age chart (active by default)
+                        document.addEventListener('DOMContentLoaded', function() {
+                            setTimeout(() => refreshChart('age-histogram', 'Age'), 300);
+                        });
+                    </script>
                     
                     <!-- Tab content -->
                     <div class="tab-content" id="featureTabContent">
