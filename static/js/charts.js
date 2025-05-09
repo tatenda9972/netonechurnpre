@@ -401,8 +401,22 @@ function createDemographicChart(elementId, labels, values, title) {
 
 // Function to create histogram for numeric features
 function createHistogram(elementId, data, feature, bins = 10) {
+    // Filter to only include churned customers (Churn == 1 or prediction == 1)
+    const churnedData = data.filter(item => {
+        return item.Churn === 1 || item.Churn === '1' || 
+               item.prediction === 1 || item.prediction === '1';
+    });
+    
     // Calculate bins and frequencies
-    const values = data.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
+    const values = churnedData.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
+    
+    // If no values (no churned customers), display message
+    if (values.length === 0) {
+        const container = document.getElementById(elementId).parentNode;
+        container.innerHTML = '<div class="alert alert-info">No churned customers with this feature data available.</div>';
+        return;
+    }
+    
     const min = Math.min(...values);
     const max = Math.max(...values);
     const binWidth = (max - min) / bins;
@@ -423,6 +437,10 @@ function createHistogram(elementId, data, feature, bins = 10) {
         binCounts[binIndex]++;
     });
     
+    // Convert counts to percentages
+    const totalChurned = values.length;
+    const binPercentages = binCounts.map(count => (count / totalChurned) * 100);
+    
     // Create chart
     const ctx = document.getElementById(elementId).getContext('2d');
     
@@ -440,9 +458,9 @@ function createHistogram(elementId, data, feature, bins = 10) {
             labels: binLabels,
             datasets: [{
                 label: feature,
-                data: binCounts,
-                backgroundColor: '#0046b8',
-                borderColor: '#0046b8',
+                data: binPercentages,
+                backgroundColor: '#dc3545', // Red color for churned customers
+                borderColor: '#dc3545',
                 borderWidth: 1
             }]
         },
@@ -453,9 +471,18 @@ function createHistogram(elementId, data, feature, bins = 10) {
                 legend: {
                     display: false
                 },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const count = binCounts[context.dataIndex];
+                            return [`${value.toFixed(1)}% of churned customers`, `Count: ${count}`];
+                        }
+                    }
+                },
                 title: {
                     display: true,
-                    text: `Distribution of ${feature}`,
+                    text: `${feature} Distribution Among Churned Customers`,
                     font: {
                         size: 16
                     }
@@ -466,7 +493,12 @@ function createHistogram(elementId, data, feature, bins = 10) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Frequency'
+                        text: 'Percentage of Churned Customers'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
                     }
                 },
                 x: {

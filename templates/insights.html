@@ -123,6 +123,42 @@
     </div>
     {% endif %}
 
+    <!-- Key Drivers of Churn Distributions -->
+    <div class="row mb-4" id="churn-drivers-section">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Key Drivers of Churn
+                    </h5>
+                    <small class="text-muted">Distribution analysis for customers likely to churn</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="age-histogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="tenure-months-histogram"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <canvas id="data-usage-gb-histogram"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>These histograms show the distribution of key factors among <strong>churned customers only</strong>. Use these insights to identify patterns in customer segments that are at high risk of churning.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Historical Trends -->
     <div class="row mb-4">
         <div class="col-lg-12">
@@ -207,6 +243,11 @@
                                         </ol>
                                         <p>
                                             Focus your retention strategies on these key areas to reduce churn most effectively.
+                                        </p>
+                                        <p>
+                                            <a href="#churn-drivers-section" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-chart-bar me-1"></i>View Driver Distributions
+                                            </a>
                                         </p>
                                     </div>
                                 </div>
@@ -362,16 +403,32 @@
             
             "histograms": {
                 {% if 'Age' in customer_data.items()|map(attribute='1')|first %}
-                    "Age": {{ customer_data|tojson }},
+                    {% set customer_rows = [] %}
+                    {% for id, row in customer_data.items() %}
+                        {% set _ = customer_rows.append(row) %}
+                    {% endfor %}
+                    "Age": {{ customer_rows|tojson }},
                 {% endif %}
                 {% if 'Tenure_Months' in customer_data.items()|map(attribute='1')|first %}
-                    "Tenure_Months": {{ customer_data|tojson }},
+                    {% set customer_rows = [] %}
+                    {% for id, row in customer_data.items() %}
+                        {% set _ = customer_rows.append(row) %}
+                    {% endfor %}
+                    "Tenure_Months": {{ customer_rows|tojson }},
                 {% endif %}
                 {% if 'Data_Usage_GB' in customer_data.items()|map(attribute='1')|first %}
-                    "Data_Usage_GB": {{ customer_data|tojson }},
+                    {% set customer_rows = [] %}
+                    {% for id, row in customer_data.items() %}
+                        {% set _ = customer_rows.append(row) %}
+                    {% endfor %}
+                    "Data_Usage_GB": {{ customer_rows|tojson }},
                 {% endif %}
                 {% if 'Monthly_Bill' in customer_data.items()|map(attribute='1')|first %}
-                    "Monthly_Bill": {{ customer_data|tojson }}
+                    {% set customer_rows = [] %}
+                    {% for id, row in customer_data.items() %}
+                        {% set _ = customer_rows.append(row) %}
+                    {% endfor %}
+                    "Monthly_Bill": {{ customer_rows|tojson }}
                 {% endif %}
             },
         {% endif %}
