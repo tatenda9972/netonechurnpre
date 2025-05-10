@@ -123,7 +123,7 @@
     </div>
     {% endif %}
 
-    <!-- Key Drivers of Churn Distributions -->
+    <!-- Key Drivers - Simplified Version -->
     <div class="row mb-4" id="churn-drivers-section">
         <div class="col-lg-12">
             <div class="card">
@@ -131,243 +131,270 @@
                     <h5 class="card-title mb-0">
                         <i class="fas fa-chart-bar me-2"></i>Key Drivers of Churn
                     </h5>
-                    <small class="text-muted">Comparing distributions between churned and retained customers</small>
+                    <small class="text-muted">Simple comparison of key features between churned and retained customers</small>
                 </div>
                 <div class="card-body">
-                    <!-- Feature tabs -->
-                    <ul class="nav nav-tabs mb-4" id="featureTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="age-tab" data-bs-toggle="tab" 
-                                    data-bs-target="#age-panel" type="button" role="tab" 
-                                    aria-controls="age-panel" aria-selected="true"
-                                    onclick="refreshChart('age-histogram', 'Age')">
-                                Age
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tenure-tab" data-bs-toggle="tab" 
-                                    data-bs-target="#tenure-panel" type="button" role="tab" 
-                                    aria-controls="tenure-panel" aria-selected="false"
-                                    onclick="refreshChart('tenure-months-histogram', 'Tenure_Months')">
-                                Tenure (Months)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="data-usage-tab" data-bs-toggle="tab" 
-                                    data-bs-target="#data-usage-panel" type="button" role="tab" 
-                                    aria-controls="data-usage-panel" aria-selected="false"
-                                    onclick="refreshChart('data-usage-gb-histogram', 'Data_Usage_GB')">
-                                Data Usage (GB)
-                            </button>
-                        </li>
-                    </ul>
-                    
-                    <script>
-                        // Check if Chart.js is loaded
-                        document.addEventListener('DOMContentLoaded', function() {
-                            console.log('Chart.js available:', typeof Chart === 'function');
-                        });
-                        
-                        // Global reference to chart objects to prevent memory leaks
-                        const histogramCharts = {
-                            'age-histogram': null,
-                            'tenure-months-histogram': null,
-                            'data-usage-gb-histogram': null
-                        };
-                        
-                        // Function to refresh a specific chart when tab is clicked
-                        function refreshChart(elementId, feature) {
-                            console.log(`=== REFRESHING CHART: ${elementId} for feature: ${feature} ===`);
-                            
-                            // Immediately check for required elements
-                            const chartData = document.getElementById('chart-data');
-                            const targetElement = document.getElementById(elementId);
-                            console.log(`Elements found: chartData=${!!chartData}, targetElement=${!!targetElement}`);
-                            
-                            if (!chartData || !targetElement) {
-                                console.error(`Missing required elements to render chart: ${elementId}`);
-                                return; // Early exit if elements don't exist
-                            }
-                            
-                            // Ensure chart container is visible and has dimensions
-                            const container = targetElement.parentNode;
-                            if (container.offsetHeight === 0) {
-                                console.log('Container has zero height, setting explicit height');
-                                container.style.height = '400px'; // Ensure container has height
-                            }
-                            
-                            // Clear any previous content and show loading indicator
-                            const loadingDiv = document.createElement('div');
-                            loadingDiv.className = 'text-center my-5';
-                            loadingDiv.innerHTML = `
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-2">Loading ${feature.replace('_', ' ')} chart...</p>
-                            `;
-                            
-                            // Only show loading if we're about to actually render
-                            try {
-                                // Parse chart data first to check if we'll proceed
-                                const data = JSON.parse(chartData.textContent);
-                                if (data.histograms && data.histograms[feature] && 
-                                    data.histograms[feature].length > 0) {
-                                    // Only show loading if we're going to render
-                                    container.innerHTML = '';
-                                    container.appendChild(loadingDiv);
-                                    container.appendChild(targetElement);
-                                }
-                            } catch (error) {
-                                // If we can't parse data, don't show loading
-                            }
-                            
-                            // Create or refresh the chart with a delay to ensure tab transition is complete
-                            setTimeout(() => {
-                                try {
-                                    const data = JSON.parse(chartData.textContent);
-                                    
-                                    // Debug data structure
-                                    console.log(`Data parsed successfully:`, {
-                                        hasHistograms: !!data.histograms,
-                                        featureExists: data.histograms ? !!data.histograms[feature] : false,
-                                        dataLength: data.histograms && data.histograms[feature] ? 
-                                            data.histograms[feature].length : 0
-                                    });
-                                    
-                                    // Destroy existing chart to prevent memory leaks
-                                    if (histogramCharts[elementId]) {
-                                        console.log(`Destroying existing chart for ${elementId}`);
-                                        histogramCharts[elementId].destroy();
-                                        histogramCharts[elementId] = null;
-                                    }
-                                    
-                                    if (data.histograms && data.histograms[feature] && 
-                                        data.histograms[feature].length > 0) {
-                                        console.log(`Rendering histogram for ${feature} with ${data.histograms[feature].length} data points`);
-                                        
-                                        // Remove loading indicator and ensure canvas is clean
-                                        container.innerHTML = '';
-                                        const canvas = document.createElement('canvas');
-                                        canvas.id = elementId;
-                                        container.appendChild(canvas);
-                                        
-                                        // Create the histogram
-                                        histogramCharts[elementId] = createHistogram(
-                                            elementId, 
-                                            data.histograms[feature], 
-                                            feature
-                                        );
-                                        
-                                        // Trigger resize to ensure proper rendering
-                                        window.dispatchEvent(new Event('resize'));
-                                        
-                                        console.log(`Histogram for ${feature} created successfully`);
-                                    } else {
-                                        console.warn(`No data available for ${feature} histogram`);
-                                        container.innerHTML = `
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                <strong>No data available for ${feature.replace('_', ' ')} histogram.</strong>
-                                                <ul class="mt-2 mb-0">
-                                                    <li>Check if your CSV contains the ${feature} column</li>
-                                                    <li>Upload a dataset with customer data including ${feature}</li>
-                                                </ul>
-                                            </div>
-                                        `;
-                                    }
-                                } catch (error) {
-                                    console.error('Error refreshing chart:', error);
-                                    container.innerHTML = `
-                                        <div class="alert alert-danger">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                            <strong>Error rendering chart:</strong> ${error.message}
+                    {% if recent_prediction %}
+                        {% set details = recent_prediction.get_details() %}
+                        {% set customer_data = details.customer_predictions %}
+                        {% if customer_data %}
+                            <!-- Age Statistics -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fas fa-user-clock me-2"></i>Age</h6>
                                         </div>
-                                    `;
-                                }
-                            }, 150); // Small delay to ensure tab transition has occurred
-                        }
-                        
-                        // Set up tab event listeners for Bootstrap tabs
-                        document.addEventListener('DOMContentLoaded', function() {
-                            console.log('DOM loaded - setting up tab listeners');
+                                        <div class="card-body">
+                                            {% set churned_ages = [] %}
+                                            {% set retained_ages = [] %}
+                                            {% for id, row in customer_data.items() %}
+                                                {% if row.Age is defined and row.Age != None %}
+                                                    {% if row.Churn == 1 or row.prediction == 1 %}
+                                                        {% set _ = churned_ages.append(row.Age) %}
+                                                    {% else %}
+                                                        {% set _ = retained_ages.append(row.Age) %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if churned_ages|length > 0 and retained_ages|length > 0 %}
+                                                {% set churned_avg = (churned_ages|sum) / churned_ages|length %}
+                                                {% set retained_avg = (retained_ages|sum) / retained_ages|length %}
+                                                
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <div class="text-center">
+                                                        <h3 class="text-danger mb-0">{{ "%.1f"|format(churned_avg) }}</h3>
+                                                        <small>Avg. Age (Churned)</small>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <h3 class="text-success mb-0">{{ "%.1f"|format(retained_avg) }}</h3>
+                                                        <small>Avg. Age (Retained)</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Age comparison bars -->
+                                                <div class="progress" style="height: 20px; margin-bottom: 10px;">
+                                                    <div class="progress-bar bg-danger" 
+                                                         style="width: {{ (churned_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ churned_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(churned_avg) }}
+                                                    </div>
+                                                    <div class="progress-bar bg-success" 
+                                                         style="width: {{ (retained_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ retained_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(retained_avg) }}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="text-center mt-3">
+                                                    <span class="badge bg-danger me-2">Churned</span>
+                                                    <span class="badge bg-success">Retained</span>
+                                                </div>
+                                                {% if churned_avg > retained_avg %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to be <strong>older</strong> on average.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to be <strong>younger</strong> on average.
+                                                    </p>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No age data available for comparison.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tenure Statistics -->
+                                <div class="col-md-4">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Tenure (Months)</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set churned_tenure = [] %}
+                                            {% set retained_tenure = [] %}
+                                            {% for id, row in customer_data.items() %}
+                                                {% if row.Tenure_Months is defined and row.Tenure_Months != None %}
+                                                    {% if row.Churn == 1 or row.prediction == 1 %}
+                                                        {% set _ = churned_tenure.append(row.Tenure_Months) %}
+                                                    {% else %}
+                                                        {% set _ = retained_tenure.append(row.Tenure_Months) %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if churned_tenure|length > 0 and retained_tenure|length > 0 %}
+                                                {% set churned_avg = (churned_tenure|sum) / churned_tenure|length %}
+                                                {% set retained_avg = (retained_tenure|sum) / retained_tenure|length %}
+                                                
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <div class="text-center">
+                                                        <h3 class="text-danger mb-0">{{ "%.1f"|format(churned_avg) }}</h3>
+                                                        <small>Avg. Tenure (Churned)</small>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <h3 class="text-success mb-0">{{ "%.1f"|format(retained_avg) }}</h3>
+                                                        <small>Avg. Tenure (Retained)</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Tenure comparison bars -->
+                                                <div class="progress" style="height: 20px; margin-bottom: 10px;">
+                                                    <div class="progress-bar bg-danger" 
+                                                         style="width: {{ (churned_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ churned_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(churned_avg) }}
+                                                    </div>
+                                                    <div class="progress-bar bg-success" 
+                                                         style="width: {{ (retained_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ retained_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(retained_avg) }}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="text-center mt-3">
+                                                    <span class="badge bg-danger me-2">Churned</span>
+                                                    <span class="badge bg-success">Retained</span>
+                                                </div>
+                                                {% if churned_avg < retained_avg %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to have <strong>shorter</strong> tenure.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to have <strong>longer</strong> tenure.
+                                                    </p>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No tenure data available for comparison.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Data Usage Statistics -->
+                                <div class="col-md-4">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fas fa-wifi me-2"></i>Data Usage (GB)</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set churned_data = [] %}
+                                            {% set retained_data = [] %}
+                                            {% for id, row in customer_data.items() %}
+                                                {% if row.Data_Usage_GB is defined and row.Data_Usage_GB != None %}
+                                                    {% if row.Churn == 1 or row.prediction == 1 %}
+                                                        {% set _ = churned_data.append(row.Data_Usage_GB) %}
+                                                    {% else %}
+                                                        {% set _ = retained_data.append(row.Data_Usage_GB) %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if churned_data|length > 0 and retained_data|length > 0 %}
+                                                {% set churned_avg = (churned_data|sum) / churned_data|length %}
+                                                {% set retained_avg = (retained_data|sum) / retained_data|length %}
+                                                
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <div class="text-center">
+                                                        <h3 class="text-danger mb-0">{{ "%.1f"|format(churned_avg) }}</h3>
+                                                        <small>Avg. Data Usage (Churned)</small>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <h3 class="text-success mb-0">{{ "%.1f"|format(retained_avg) }}</h3>
+                                                        <small>Avg. Data Usage (Retained)</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Data usage comparison bars -->
+                                                <div class="progress" style="height: 20px; margin-bottom: 10px;">
+                                                    <div class="progress-bar bg-danger" 
+                                                         style="width: {{ (churned_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ churned_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(churned_avg) }}
+                                                    </div>
+                                                    <div class="progress-bar bg-success" 
+                                                         style="width: {{ (retained_avg / (churned_avg + retained_avg) * 100)|round }}%;" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="{{ retained_avg|round }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="{{ (churned_avg + retained_avg)|round }}">
+                                                        {{ "%.1f"|format(retained_avg) }}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="text-center mt-3">
+                                                    <span class="badge bg-danger me-2">Churned</span>
+                                                    <span class="badge bg-success">Retained</span>
+                                                </div>
+                                                {% if churned_avg > retained_avg %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to use <strong>more data</strong> on average.
+                                                    </p>
+                                                {% else %}
+                                                    <p class="text-muted mt-2 small">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Customers who churn tend to use <strong>less data</strong> on average.
+                                                    </p>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No data usage information available for comparison.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            // Set up event listeners for bootstrap tabs
-                            const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-                            tabs.forEach(tab => {
-                                tab.addEventListener('shown.bs.tab', function(event) {
-                                    const targetId = event.target.getAttribute('data-bs-target');
-                                    console.log(`Tab changed to: ${targetId}`);
-                                    
-                                    // Refresh the appropriate chart based on the tab
-                                    if (targetId === '#age-panel') {
-                                        refreshChart('age-histogram', 'Age');
-                                    } else if (targetId === '#tenure-panel') {
-                                        refreshChart('tenure-months-histogram', 'Tenure_Months');
-                                    } else if (targetId === '#data-usage-panel') {
-                                        refreshChart('data-usage-gb-histogram', 'Data_Usage_GB');
-                                    }
-                                });
-                            });
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Insight:</strong> This simplified view shows the average values for key features, comparing churned versus retained customers.
+                                Large differences between the averages may indicate that the feature is a strong predictor of churn behavior.
+                            </div>
                             
-                            // Initial rendering of the Age chart (active by default)
-                            setTimeout(() => {
-                                console.log('Initial chart rendering - Age');
-                                refreshChart('age-histogram', 'Age');
-                            }, 300);
-                        });
-                    </script>
-                    
-                    <!-- Tab content -->
-                    <div class="tab-content" id="featureTabContent">
-                        <div class="tab-pane fade show active" id="age-panel" role="tabpanel" aria-labelledby="age-tab">
-                            <div class="chart-container" style="height: 400px;">
-                                <canvas id="age-histogram"></canvas>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No customer data available for analysis. Please upload customer data to see insights.
                             </div>
-                            <div class="mt-3">
-                                <h6 class="fw-bold">Analysis</h6>
-                                <p>
-                                    This chart shows the age distribution of customers, comparing those who churned (red) 
-                                    versus those who remained (green). The percentages allow you to identify age groups 
-                                    with disproportionately high churn rates.
-                                </p>
-                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No prediction data available. Make a prediction first to see insights.
                         </div>
-                        
-                        <div class="tab-pane fade" id="tenure-panel" role="tabpanel" aria-labelledby="tenure-tab">
-                            <div class="chart-container" style="height: 400px;">
-                                <canvas id="tenure-months-histogram"></canvas>
-                            </div>
-                            <div class="mt-3">
-                                <h6 class="fw-bold">Analysis</h6>
-                                <p>
-                                    Customer tenure (months with your company) often strongly correlates with churn likelihood.
-                                    This chart compares the tenure distribution between customers who churned versus those who stayed.
-                                    Look for specific tenure periods where churn risk is elevated.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="tab-pane fade" id="data-usage-panel" role="tabpanel" aria-labelledby="data-usage-tab">
-                            <div class="chart-container" style="height: 400px;">
-                                <canvas id="data-usage-gb-histogram"></canvas>
-                            </div>
-                            <div class="mt-3">
-                                <h6 class="fw-bold">Analysis</h6>
-                                <p>
-                                    Data usage patterns often reveal customer satisfaction and value perception.
-                                    This chart shows the distribution of data usage (GB) between churned and retained customers.
-                                    Significant differences may indicate pricing or plan fit issues.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="alert alert-info mt-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>How to interpret:</strong> These comparative histograms show the percentage distribution of 
-                        churned customers (red) versus retained customers (green) across different value ranges. 
-                        Where the red bars are significantly taller than green, those values represent higher churn risk.
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
