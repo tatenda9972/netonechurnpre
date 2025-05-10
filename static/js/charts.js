@@ -401,147 +401,195 @@ function createDemographicChart(elementId, labels, values, title) {
 
 // Function to create comparative histogram for numeric features
 function createHistogram(elementId, data, feature, bins = 10) {
-    // Separate churned and retained customers
-    const churnedData = data.filter(item => {
-        return item.Churn === 1 || item.Churn === '1' || 
-               item.prediction === 1 || item.prediction === '1';
-    });
-    
-    const retainedData = data.filter(item => {
-        return (item.Churn === 0 || item.Churn === '0' || 
-                item.prediction === 0 || item.prediction === '0');
-    });
-    
-    // Calculate all values to determine common bin range
-    const allValues = data.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
-    
-    // If no values, display message
-    if (allValues.length === 0) {
-        const container = document.getElementById(elementId).parentNode;
-        container.innerHTML = '<div class="alert alert-info">No customer data available for this feature.</div>';
-        return;
-    }
-    
-    // Filter values for each group
-    const churnedValues = churnedData.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
-    const retainedValues = retainedData.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
-    
-    // Use common min/max for both groups to ensure fair comparison
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-    const binWidth = (max - min) / bins;
-    
-    // Initialize bin arrays
-    const churnedBinCounts = Array(bins).fill(0);
-    const retainedBinCounts = Array(bins).fill(0);
-    const binLabels = [];
-    
-    // Create bin labels
-    for (let i = 0; i < bins; i++) {
-        const lowerBound = min + i * binWidth;
-        const upperBound = min + (i + 1) * binWidth;
-        binLabels.push(`${lowerBound.toFixed(1)} - ${upperBound.toFixed(1)}`);
-    }
-    
-    // Count values in each bin
-    churnedValues.forEach(value => {
-        const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1);
-        churnedBinCounts[binIndex]++;
-    });
-    
-    retainedValues.forEach(value => {
-        const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1);
-        retainedBinCounts[binIndex]++;
-    });
-    
-    // Convert counts to percentages
-    const totalChurned = churnedValues.length || 1; // Avoid division by zero
-    const totalRetained = retainedValues.length || 1;
-    
-    const churnedPercentages = churnedBinCounts.map(count => (count / totalChurned) * 100);
-    const retainedPercentages = retainedBinCounts.map(count => (count / totalRetained) * 100);
-    
-    // Create chart
-    const ctx = document.getElementById(elementId).getContext('2d');
-    
-    // Create chart ID based on element
-    const chartId = elementId + 'Histogram';
-    
-    // Destroy existing chart if it exists
-    if (window[chartId]) {
-        window[chartId].destroy();
-    }
-    
-    // Create the chart with both datasets
-    window[chartId] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: binLabels,
-            datasets: [
-                {
-                    label: 'Churned Customers',
-                    data: churnedPercentages,
-                    backgroundColor: '#dc3545', // Red color for churned
-                    borderColor: '#dc3545',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Retained Customers',
-                    data: retainedPercentages,
-                    backgroundColor: '#28a745', // Green color for retained
-                    borderColor: '#28a745',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.raw;
-                            const dataset = context.datasetIndex;
-                            const binIndex = context.dataIndex;
-                            const count = dataset === 0 ? churnedBinCounts[binIndex] : retainedBinCounts[binIndex];
-                            const label = context.dataset.label;
-                            return [`${label}: ${value.toFixed(1)}%`, `Count: ${count}`];
-                        }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: `${feature} Distribution - Churned vs Retained`,
-                    font: {
-                        size: 16
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Percentage'
+    try {
+        console.log(`Creating histogram for ${feature} with ${data.length} data points, element ID: ${elementId}`);
+        
+        // Verify canvas exists
+        const canvas = document.getElementById(elementId);
+        if (!canvas) {
+            console.error(`Canvas element ${elementId} not found`);
+            return null;
+        }
+        console.log(`Canvas found: ${canvas.tagName}, visible: ${canvas.offsetWidth > 0}`);
+        
+        // Separate churned and retained customers
+        const churnedData = data.filter(item => {
+            return item.Churn === 1 || item.Churn === '1' || 
+                  item.prediction === 1 || item.prediction === '1';
+        });
+        
+        const retainedData = data.filter(item => {
+            return (item.Churn === 0 || item.Churn === '0' || 
+                    item.prediction === 0 || item.prediction === '0');
+        });
+        
+        console.log(`Data split: ${churnedData.length} churned, ${retainedData.length} retained`);
+        
+        // Calculate all values to determine common bin range
+        const allValues = data.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
+        
+        // If no values, display message
+        if (allValues.length === 0) {
+            console.error(`No valid data for feature: ${feature}`);
+            const container = canvas.parentNode;
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>No valid data for ${feature.replace('_', ' ')}.</strong>
+                    <p>The selected feature may be missing or contain invalid values.</p>
+                </div>
+            `;
+            return null;
+        }
+        
+        // Filter values for each group
+        const churnedValues = churnedData.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
+        const retainedValues = retainedData.map(item => parseFloat(item[feature])).filter(v => !isNaN(v));
+        
+        console.log(`Valid values: ${churnedValues.length} churned, ${retainedValues.length} retained`);
+        
+        // Use common min/max for both groups to ensure fair comparison
+        const min = Math.min(...allValues);
+        const max = Math.max(...allValues);
+        const binWidth = (max - min) / bins;
+        
+        console.log(`Value range for ${feature}: min=${min}, max=${max}, binWidth=${binWidth}`);
+        
+        // Initialize bin arrays
+        const churnedBinCounts = Array(bins).fill(0);
+        const retainedBinCounts = Array(bins).fill(0);
+        const binLabels = [];
+        
+        // Create bin labels
+        for (let i = 0; i < bins; i++) {
+            const lowerBound = min + i * binWidth;
+            const upperBound = min + (i + 1) * binWidth;
+            binLabels.push(`${lowerBound.toFixed(1)} - ${upperBound.toFixed(1)}`);
+        }
+        
+        // Count values in each bin
+        churnedValues.forEach(value => {
+            const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1);
+            churnedBinCounts[binIndex]++;
+        });
+        
+        retainedValues.forEach(value => {
+            const binIndex = Math.min(Math.floor((value - min) / binWidth), bins - 1);
+            retainedBinCounts[binIndex]++;
+        });
+        
+        // Convert counts to percentages
+        const totalChurned = churnedValues.length || 1; // Avoid division by zero
+        const totalRetained = retainedValues.length || 1;
+        
+        const churnedPercentages = churnedBinCounts.map(count => (count / totalChurned) * 100);
+        const retainedPercentages = retainedBinCounts.map(count => (count / totalRetained) * 100);
+        
+        console.log(`Bin data prepared. Sample bin: ${binLabels[0]} - Churned: ${churnedPercentages[0].toFixed(1)}%, Retained: ${retainedPercentages[0].toFixed(1)}%`);
+        
+        // Get context for chart rendering
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error(`Could not get 2D context for canvas: ${elementId}`);
+            return null;
+        }
+        
+        // Create chart ID based on element
+        const chartId = elementId + 'Histogram';
+        
+        // Destroy existing chart if it exists
+        if (window[chartId]) {
+            console.log(`Destroying existing chart with ID: ${chartId}`);
+            window[chartId].destroy();
+        }
+        
+        // Create the chart with both datasets
+        console.log(`Creating new Chart.js instance for: ${elementId}`);
+        window[chartId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: binLabels,
+                datasets: [
+                    {
+                        label: 'Churned Customers',
+                        data: churnedPercentages,
+                        backgroundColor: '#dc3545', // Red color for churned
+                        borderColor: '#dc3545',
+                        borderWidth: 1
                     },
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
+                    {
+                        label: 'Retained Customers',
+                        data: retainedPercentages,
+                        backgroundColor: '#28a745', // Green color for retained
+                        borderColor: '#28a745',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const dataset = context.datasetIndex;
+                                const binIndex = context.dataIndex;
+                                const count = dataset === 0 ? churnedBinCounts[binIndex] : retainedBinCounts[binIndex];
+                                const label = context.dataset.label;
+                                return [`${label}: ${value.toFixed(1)}%`, `Count: ${count}`];
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: `${feature.replace('_', ' ')} Distribution - Churned vs Retained`,
+                        font: {
+                            size: 16
                         }
                     }
                 },
-                x: {
-                    title: {
-                        display: true,
-                        text: feature
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: feature.replace('_', ' ')
+                        }
                     }
                 }
             }
+        });
+        
+        console.log(`Chart created successfully for ${feature}`);
+        return window[chartId]; // Return the chart object so we can track and destroy it later
+    } catch (error) {
+        console.error(`Error in createHistogram for ${feature}:`, error);
+        const element = document.getElementById(elementId);
+        if (element && element.parentNode) {
+            element.parentNode.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error creating chart:</strong> ${error.message}
+                </div>
+            `;
         }
-    });
+        return null;
+    }
 }

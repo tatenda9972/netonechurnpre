@@ -163,57 +163,157 @@
                     </ul>
                     
                     <script>
+                        // Check if Chart.js is loaded
+                        document.addEventListener('DOMContentLoaded', function() {
+                            console.log('Chart.js available:', typeof Chart === 'function');
+                        });
+                        
+                        // Global reference to chart objects to prevent memory leaks
+                        const histogramCharts = {
+                            'age-histogram': null,
+                            'tenure-months-histogram': null,
+                            'data-usage-gb-histogram': null
+                        };
+                        
                         // Function to refresh a specific chart when tab is clicked
                         function refreshChart(elementId, feature) {
-                            console.log(`Start refreshing chart: ${elementId} for feature: ${feature}`);
-                            // Wait for the tab panel to become visible
+                            console.log(`=== REFRESHING CHART: ${elementId} for feature: ${feature} ===`);
+                            
+                            // Immediately check for required elements
+                            const chartData = document.getElementById('chart-data');
+                            const targetElement = document.getElementById(elementId);
+                            console.log(`Elements found: chartData=${!!chartData}, targetElement=${!!targetElement}`);
+                            
+                            if (!chartData || !targetElement) {
+                                console.error(`Missing required elements to render chart: ${elementId}`);
+                                return; // Early exit if elements don't exist
+                            }
+                            
+                            // Ensure chart container is visible and has dimensions
+                            const container = targetElement.parentNode;
+                            if (container.offsetHeight === 0) {
+                                console.log('Container has zero height, setting explicit height');
+                                container.style.height = '400px'; // Ensure container has height
+                            }
+                            
+                            // Clear any previous content and show loading indicator
+                            const loadingDiv = document.createElement('div');
+                            loadingDiv.className = 'text-center my-5';
+                            loadingDiv.innerHTML = `
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading ${feature.replace('_', ' ')} chart...</p>
+                            `;
+                            
+                            // Only show loading if we're about to actually render
+                            try {
+                                // Parse chart data first to check if we'll proceed
+                                const data = JSON.parse(chartData.textContent);
+                                if (data.histograms && data.histograms[feature] && 
+                                    data.histograms[feature].length > 0) {
+                                    // Only show loading if we're going to render
+                                    container.innerHTML = '';
+                                    container.appendChild(loadingDiv);
+                                    container.appendChild(targetElement);
+                                }
+                            } catch (error) {
+                                // If we can't parse data, don't show loading
+                            }
+                            
+                            // Create or refresh the chart with a delay to ensure tab transition is complete
                             setTimeout(() => {
-                                const chartData = document.getElementById('chart-data');
-                                console.log(`Chart data element exists: ${!!chartData}`);
-                                const targetElement = document.getElementById(elementId);
-                                console.log(`Target element ${elementId} exists: ${!!targetElement}`);
-                                
-                                if (chartData && targetElement) {
-                                    try {
-                                        const data = JSON.parse(chartData.textContent);
-                                        console.log(`Data parsed successfully, histograms exists: ${!!data.histograms}`);
+                                try {
+                                    const data = JSON.parse(chartData.textContent);
+                                    
+                                    // Debug data structure
+                                    console.log(`Data parsed successfully:`, {
+                                        hasHistograms: !!data.histograms,
+                                        featureExists: data.histograms ? !!data.histograms[feature] : false,
+                                        dataLength: data.histograms && data.histograms[feature] ? 
+                                            data.histograms[feature].length : 0
+                                    });
+                                    
+                                    // Destroy existing chart to prevent memory leaks
+                                    if (histogramCharts[elementId]) {
+                                        console.log(`Destroying existing chart for ${elementId}`);
+                                        histogramCharts[elementId].destroy();
+                                        histogramCharts[elementId] = null;
+                                    }
+                                    
+                                    if (data.histograms && data.histograms[feature] && 
+                                        data.histograms[feature].length > 0) {
+                                        console.log(`Rendering histogram for ${feature} with ${data.histograms[feature].length} data points`);
                                         
-                                        if (data.histograms && data.histograms[feature]) {
-                                            console.log(`Feature ${feature} data exists in histograms. Data sample:`, 
-                                                data.histograms[feature].slice(0, 2));
-                                            createHistogram(elementId, data.histograms[feature], feature);
-                                            console.log(`Histogram for ${feature} created successfully`);
-                                        } else {
-                                            console.warn(`No data available for ${feature} histogram`);
-                                            const container = targetElement.parentNode;
-                                            container.innerHTML = `<div class="alert alert-info">
+                                        // Remove loading indicator and ensure canvas is clean
+                                        container.innerHTML = '';
+                                        const canvas = document.createElement('canvas');
+                                        canvas.id = elementId;
+                                        container.appendChild(canvas);
+                                        
+                                        // Create the histogram
+                                        histogramCharts[elementId] = createHistogram(
+                                            elementId, 
+                                            data.histograms[feature], 
+                                            feature
+                                        );
+                                        
+                                        // Trigger resize to ensure proper rendering
+                                        window.dispatchEvent(new Event('resize'));
+                                        
+                                        console.log(`Histogram for ${feature} created successfully`);
+                                    } else {
+                                        console.warn(`No data available for ${feature} histogram`);
+                                        container.innerHTML = `
+                                            <div class="alert alert-info">
                                                 <i class="fas fa-info-circle me-2"></i>
-                                                No data available for ${feature.replace('_', ' ')} histogram.
+                                                <strong>No data available for ${feature.replace('_', ' ')} histogram.</strong>
                                                 <ul class="mt-2 mb-0">
                                                     <li>Check if your CSV contains the ${feature} column</li>
                                                     <li>Upload a dataset with customer data including ${feature}</li>
                                                 </ul>
-                                            </div>`;
-                                        }
-                                    } catch (error) {
-                                        console.error('Error refreshing chart:', error);
-                                        console.error('Error details:', error.message);
-                                        const container = targetElement.parentNode;
-                                        container.innerHTML = `<div class="alert alert-danger">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                            Error loading chart data: ${error.message}
-                                        </div>`;
+                                            </div>
+                                        `;
                                     }
-                                } else {
-                                    console.error(`Required elements not found: chartData=${!!chartData}, targetElement=${!!targetElement}`);
+                                } catch (error) {
+                                    console.error('Error refreshing chart:', error);
+                                    container.innerHTML = `
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>Error rendering chart:</strong> ${error.message}
+                                        </div>
+                                    `;
                                 }
-                            }, 100); // Small delay to ensure tab transition has occurred
+                            }, 150); // Small delay to ensure tab transition has occurred
                         }
                         
-                        // Initial rendering of the Age chart (active by default)
+                        // Set up tab event listeners for Bootstrap tabs
                         document.addEventListener('DOMContentLoaded', function() {
-                            console.log('DOM content loaded - initializing charts');
-                            setTimeout(() => refreshChart('age-histogram', 'Age'), 300);
+                            console.log('DOM loaded - setting up tab listeners');
+                            
+                            // Set up event listeners for bootstrap tabs
+                            const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+                            tabs.forEach(tab => {
+                                tab.addEventListener('shown.bs.tab', function(event) {
+                                    const targetId = event.target.getAttribute('data-bs-target');
+                                    console.log(`Tab changed to: ${targetId}`);
+                                    
+                                    // Refresh the appropriate chart based on the tab
+                                    if (targetId === '#age-panel') {
+                                        refreshChart('age-histogram', 'Age');
+                                    } else if (targetId === '#tenure-panel') {
+                                        refreshChart('tenure-months-histogram', 'Tenure_Months');
+                                    } else if (targetId === '#data-usage-panel') {
+                                        refreshChart('data-usage-gb-histogram', 'Data_Usage_GB');
+                                    }
+                                });
+                            });
+                            
+                            // Initial rendering of the Age chart (active by default)
+                            setTimeout(() => {
+                                console.log('Initial chart rendering - Age');
+                                refreshChart('age-histogram', 'Age');
+                            }, 300);
                         });
                     </script>
                     
