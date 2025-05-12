@@ -389,6 +389,16 @@ def configure_routes(app):
         predictions = Prediction.query.filter_by(user_id=current_user.id).order_by(
             Prediction.created_at.desc()).paginate(page=page, per_page=10)
         
+        # Debug information
+        print(f"History route: Found {len(predictions.items) if predictions.items else 0} predictions for user {current_user.id}")
+        
+        # Make sure we have some data for the churn timeline chart
+        # by retrieving a slightly larger dataset for charts
+        chart_data_query = Prediction.query.filter_by(user_id=current_user.id).order_by(
+            Prediction.created_at.desc()).limit(20).all()
+        
+        print(f"Retrieved {len(chart_data_query)} predictions for chart data")
+        
         return render_template(
             'history.html',
             title='Prediction History',
