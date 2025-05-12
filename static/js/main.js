@@ -130,11 +130,23 @@ function initializeCharts() {
                 
                 // Create churn timeline chart
                 if (data.churnTimeline && document.getElementById('churn-timeline-chart')) {
-                    createChurnTimeline(
-                        'churn-timeline-chart',
-                        data.churnTimeline.dates,
-                        data.churnTimeline.rates
-                    );
+                    // Only create the chart if we have data points
+                    if (data.churnTimeline.dates && data.churnTimeline.dates.length > 1) {
+                        // Hide the no-data message if it exists
+                        const noDataMsg = document.getElementById('no-chart-data');
+                        if (noDataMsg) {
+                            noDataMsg.style.display = 'none';
+                        }
+                        
+                        console.log("Creating churn timeline chart with data:", data.churnTimeline);
+                        createChurnTimeline(
+                            'churn-timeline-chart',
+                            data.churnTimeline.dates,
+                            data.churnTimeline.rates
+                        );
+                    } else {
+                        console.log("Insufficient data for churn timeline chart");
+                    }
                 }
                 
                 // Create demographic charts

@@ -392,17 +392,43 @@ def configure_routes(app):
         # Debug information
         print(f"History route: Found {len(predictions.items) if predictions.items else 0} predictions for user {current_user.id}")
         
-        # Make sure we have some data for the churn timeline chart
-        # by retrieving a slightly larger dataset for charts
-        chart_data_query = Prediction.query.filter_by(user_id=current_user.id).order_by(
-            Prediction.created_at.desc()).limit(20).all()
-        
-        print(f"Retrieved {len(chart_data_query)} predictions for chart data")
+        # Check if we have multiple predictions to show a trend
+        if predictions.items and len(predictions.items) > 1:
+            try:
+                # Create a formatted churn timeline for the chart
+                # Use query to avoid pagination issues and ensure we have all data for the chart
+                timeline_data = Prediction.query.filter_by(user_id=current_user.id).order_by(
+                    Prediction.created_at.asc()).all()
+                
+                print(f"Retrieved {len(timeline_data)} predictions for timeline chart")
+                
+                # Properly format dates as strings that JavaScript can parse
+                formatted_dates = [p.created_at.strftime('%Y-%m-%d') for p in timeline_data]
+                
+                # Calculate churn rates as percentages
+                churn_rates = [(p.churn_count / p.total_customers * 100) for p in timeline_data]
+                
+                # Log chart data for debugging
+                print(f"Timeline dates: {formatted_dates}")
+                print(f"Churn rates: {churn_rates}")
+                
+                # Pass the chart data to the template
+                chart_data = {
+                    'dates': formatted_dates,
+                    'rates': churn_rates
+                }
+            except Exception as e:
+                print(f"Error preparing chart data: {str(e)}")
+                chart_data = None
+        else:
+            chart_data = None
+            print("Not enough predictions to create timeline chart")
         
         return render_template(
             'history.html',
             title='Prediction History',
-            predictions=predictions
+            predictions=predictions,
+            chart_data=chart_data
         )
     
     @app.route('/delete_prediction/<int:prediction_id>', methods=['POST'])

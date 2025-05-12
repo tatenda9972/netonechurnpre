@@ -138,22 +138,26 @@
             <div class="card-body">
                 <div class="chart-container">
                     <canvas id="churn-timeline-chart"></canvas>
+                    {% if not chart_data or not chart_data.dates %}
+                    <div id="no-chart-data" class="alert alert-info text-center mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>No trend data available yet.</strong>
+                        <p class="mb-0">Make more predictions to see your churn trends over time.</p>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <!-- Pass data to JavaScript for chart -->
                 <script id="chart-data" type="application/json">
                 {
                     "churnTimeline": {
-                        "dates": [
-                            {% for prediction in predictions.items %}
-                                "{{ prediction.created_at.strftime('%Y-%m-%d') }}"{% if not loop.last %},{% endif %}
-                            {% endfor %}
-                        ],
-                        "rates": [
-                            {% for prediction in predictions.items %}
-                                {{ prediction.churn_count / prediction.total_customers * 100 }}{% if not loop.last %},{% endif %}
-                            {% endfor %}
-                        ]
+                        {% if chart_data %}
+                        "dates": {{ chart_data.dates|tojson }},
+                        "rates": {{ chart_data.rates|tojson }}
+                        {% else %}
+                        "dates": [],
+                        "rates": []
+                        {% endif %}
                     }
                 }
                 </script>
