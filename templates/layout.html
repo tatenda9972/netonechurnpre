@@ -36,12 +36,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('index') }}">
-                            <i class="fas fa-home me-1"></i> Home
-                        </a>
-                    </li>
-                    
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
@@ -114,48 +108,7 @@
         {% block content %}{% endblock %}
     </main>
     
-    <!-- Footer -->
-    <footer class="footer mt-5 py-3 bg-dark">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="text-white">NetOne Churn Prediction System</h5>
-                    <p class="text-muted">A machine learning solution to predict and reduce customer churn.</p>
-                </div>
-                <div class="col-md-3">
-                    <h5 class="text-white">Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="{{ url_for('index') }}">Home</a></li>
-                        {% if current_user.is_authenticated %}
-                            <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                            <li><a href="{{ url_for('prediction') }}">Prediction</a></li>
-                            <li><a href="{{ url_for('history') }}">History</a></li>
-                        {% else %}
-                            <li><a href="{{ url_for('login') }}">Login</a></li>
-                            <li><a href="{{ url_for('register') }}">Register</a></li>
-                        {% endif %}
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h5 class="text-white">Contact</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-envelope me-2"></i> support@netone.co.zw</li>
-                        <li><i class="fas fa-phone me-2"></i> +263 71 123 4567</li>
-                        <li><i class="fas fa-map-marker-alt me-2"></i> Harare, Zimbabwe</li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="mt-4 mb-3 border-light">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="text-muted">&copy; 2023 NetOne. All rights reserved.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="text-muted">Version 1.0.0</p>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer removed as requested -->
     
     <!-- Bootstrap JavaScript Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

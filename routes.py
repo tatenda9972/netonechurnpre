@@ -20,8 +20,10 @@ def configure_routes(app):
     
     @app.route('/')
     def index():
-        """Render the homepage"""
-        return render_template('index.html', title='NetOne Churn Prediction System')
+        """Redirect to login page"""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        return redirect(url_for('login'))
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
