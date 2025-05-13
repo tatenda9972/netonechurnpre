@@ -101,41 +101,54 @@ def get_model_metrics():
         }
 
 def get_feature_importance():
-    """Get feature importance from the model"""
+    """Get feature importance from the model with explicit numeric values"""
     try:
         # Get the most recent prediction to extract feature importance
         recent_prediction = Prediction.query.order_by(Prediction.created_at.desc()).first()
         
         if recent_prediction:
-            # Get feature importance as a dictionary
-            feature_importance = recent_prediction.get_feature_importance()
-            if not feature_importance or not isinstance(feature_importance, dict):
-                # Handle case where feature_importance is not a valid dictionary
-                raise ValueError("Invalid feature importance data")
+            try:
+                # Get feature importance as a dictionary
+                feature_importance = recent_prediction.get_feature_importance()
                 
-            # Sort by importance value (descending)
-            sorted_features = sorted(
-                feature_importance.items(), 
-                key=lambda x: float(x[1]) if isinstance(x[1], (int, float, str)) else 0, 
-                reverse=True
-            )
-            
-            # Get top 10 features
-            top_features = sorted_features[:10]
-            
-            # Convert all values to float to ensure they're JSON-serializable
-            return {
-                'features': [str(f[0]) for f in top_features],
-                'values': [float(f[1]) if isinstance(f[1], (int, float, str)) else 0.0 for f in top_features]
-            }
-        else:
-            # Default values if no predictions
-            return {
-                'features': ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Call_Minutes', 'SMS_Count'],
-                'values': [0.3, 0.25, 0.2, 0.15, 0.1]
-            }
+                # Validate the data structure
+                if not feature_importance or not isinstance(feature_importance, dict):
+                    raise ValueError("Invalid feature importance data structure")
+                
+                # Create a clean list of features with explicit numeric values
+                feature_list = []
+                for feature, importance in feature_importance.items():
+                    try:
+                        # Convert to float explicitly to catch any conversion errors
+                        float_value = float(importance) if importance is not None else 0.0
+                        feature_list.append((str(feature), float_value))
+                    except (ValueError, TypeError):
+                        # Skip features with non-numeric importance values
+                        continue
+                
+                # Sort by importance value (descending)
+                sorted_features = sorted(feature_list, key=lambda x: x[1], reverse=True)
+                
+                # Get top 10 features or all if less than 10
+                top_features = sorted_features[:10]
+                
+                # Return separate lists for features and values
+                return {
+                    'features': [str(f[0]) for f in top_features],
+                    'values': [float(f[1]) for f in top_features]
+                }
+            except Exception as e:
+                print(f"Error processing feature importance from prediction: {str(e)}")
+                raise
+        
+        # Default values if no valid predictions or feature data
+        return {
+            'features': ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Call_Minutes', 'SMS_Count'],
+            'values': [0.3, 0.25, 0.2, 0.15, 0.1]
+        }
     except Exception as e:
         print(f"Error getting feature importance: {str(e)}")
+        # Fallback with guaranteed safe values
         return {
             'features': ['No Data Available'],
             'values': [1.0]
