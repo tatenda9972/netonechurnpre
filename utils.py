@@ -161,12 +161,7 @@ def generate_report(prediction):
     writer.writerow(['Churn Rate', f"{prediction.churn_count / prediction.total_customers * 100:.2f}%"])
     writer.writerow([])
     
-    # Write model metrics
-    writer.writerow(['Model Metrics'])
-    writer.writerow(['Accuracy', f"{prediction.accuracy:.4f}"])
-    writer.writerow(['Precision', f"{prediction.precision:.4f}"])
-    writer.writerow(['Recall', f"{prediction.recall:.4f}"])
-    writer.writerow(['F1 Score', f"{prediction.f1_score:.4f}"])
+    # Skip technical model metrics as requested
     writer.writerow([])
     
     # Write feature importance

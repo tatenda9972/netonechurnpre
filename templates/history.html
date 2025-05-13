@@ -33,7 +33,6 @@
                                     <th>Total Customers</th>
                                     <th>Churn Count</th>
                                     <th>Churn Rate</th>
-                                    <th>Accuracy</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -45,7 +44,6 @@
                                         <td>{{ prediction.total_customers }}</td>
                                         <td>{{ prediction.churn_count }}</td>
                                         <td>{{ "%.2f"|format(prediction.churn_count / prediction.total_customers * 100) }}%</td>
-                                        <td>{{ "%.2f"|format(prediction.accuracy * 100) }}%</td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
                                                 <a href="{{ url_for('prediction_result', prediction_id=prediction.id) }}" class="btn btn-primary">

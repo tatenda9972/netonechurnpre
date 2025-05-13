@@ -40,18 +40,6 @@
                         <div class="metric-value">{{ "%.1f"|format(prediction.churn_count / prediction.total_customers * 100) }}%</div>
                         <div class="metric-label">Churn Rate</div>
                     </div>
-                    <div class="metric-item">
-                        <div class="metric-value">{{ "%.1f"|format(prediction.accuracy * 100) }}%</div>
-                        <div class="metric-label">Accuracy</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-value">{{ "%.1f"|format(prediction.precision * 100) }}%</div>
-                        <div class="metric-label">Precision</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-value">{{ "%.1f"|format(prediction.recall * 100) }}%</div>
-                        <div class="metric-label">Recall</div>
-                    </div>
                 </div>
                 
                 <!-- Charts Row -->
