@@ -76,7 +76,22 @@
                                     <span class="badge bg-secondary">User</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Inactive</span>
+                                {% endif %}
+                            </td>
                             <td>{{ user.predictions|length }}</td>
+                            <td>
+                                {% if user.last_login %}
+                                    {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.login_count }}</td>
                             <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
@@ -87,7 +102,8 @@
                                             data-user-first-name="{{ user.first_name }}"
                                             data-user-last-name="{{ user.last_name }}"
                                             data-user-email="{{ user.email }}"
-                                            data-user-is-admin="{{ user.is_admin }}">
+                                            data-user-is-admin="{{ user.is_admin }}"
+                                            data-user-is-active="{{ user.is_active }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-danger" 
@@ -225,6 +241,11 @@
                         <input type="checkbox" class="form-check-input" id="edit_is_admin" name="is_admin">
                         <label class="form-check-label" for="edit_is_admin">Admin User</label>
                     </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active" checked>
+                        <label class="form-check-label" for="edit_is_active">Active Account</label>
+                        <div class="form-text">Uncheck to disable user access.</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -272,12 +293,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const lastName = button.getAttribute('data-user-last-name');
         const email = button.getAttribute('data-user-email');
         const isAdmin = button.getAttribute('data-user-is-admin') === 'True';
+        const isActive = button.getAttribute('data-user-is-active') === 'True';
         
         editUserModal.querySelector('#edit_user_id').value = userId;
         editUserModal.querySelector('#edit_first_name').value = firstName;
         editUserModal.querySelector('#edit_last_name').value = lastName;
         editUserModal.querySelector('#edit_email').value = email;
         editUserModal.querySelector('#edit_is_admin').checked = isAdmin;
+        editUserModal.querySelector('#edit_is_active').checked = isActive;
     });
     
     // Handle Delete User Modal

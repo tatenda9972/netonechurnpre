@@ -362,6 +362,7 @@ def configure_admin_routes(app):
             email = request.form.get('email')
             password = request.form.get('password')
             is_admin = 'is_admin' in request.form
+            is_active = 'is_active' in request.form
             
             # Find the user
             user = User.query.get(user_id)
