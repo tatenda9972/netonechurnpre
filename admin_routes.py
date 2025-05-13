@@ -441,6 +441,7 @@ def configure_admin_routes(app):
         date_to = request.args.get('date_to')
         min_churn_rate = request.args.get('min_churn_rate', type=float)
         max_churn_rate = request.args.get('max_churn_rate', type=float)
+        min_accuracy = request.args.get('min_accuracy', type=float)
         
         # Build the query with filters
         query = Prediction.query
@@ -458,25 +459,35 @@ def configure_admin_routes(app):
             date_to_obj = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
             query = query.filter(Prediction.created_at < date_to_obj)
         
-        # Apply churn rate filter (this is more complex as it requires calculation)
+        # Apply churn rate and accuracy filters (these are more complex as they require calculation)
         filtered_predictions = query.all()
+        filtered_ids = []
         
-        if min_churn_rate is not None or max_churn_rate is not None:
-            filtered_ids = []
-            for pred in filtered_predictions:
+        for pred in filtered_predictions:
+            include_prediction = True
+            
+            # Check churn rate filter
+            if min_churn_rate is not None or max_churn_rate is not None:
                 churn_rate = (pred.churn_count / pred.total_customers * 100) if pred.total_customers > 0 else 0
                 
-                if min_churn_rate is not None and max_churn_rate is not None:
-                    if min_churn_rate <= churn_rate <= max_churn_rate:
-                        filtered_ids.append(pred.id)
-                elif min_churn_rate is not None:
-                    if churn_rate >= min_churn_rate:
-                        filtered_ids.append(pred.id)
-                elif max_churn_rate is not None:
-                    if churn_rate <= max_churn_rate:
-                        filtered_ids.append(pred.id)
+                if min_churn_rate is not None and churn_rate < min_churn_rate:
+                    include_prediction = False
+                
+                if max_churn_rate is not None and churn_rate > max_churn_rate:
+                    include_prediction = False
             
+            # Check accuracy filter
+            if min_accuracy is not None and pred.accuracy < min_accuracy:
+                include_prediction = False
+            
+            if include_prediction:
+                filtered_ids.append(pred.id)
+        
+        if filtered_ids:
             query = query.filter(Prediction.id.in_(filtered_ids))
+        elif min_churn_rate is not None or max_churn_rate is not None or min_accuracy is not None:
+            # If we have filters but no matches, ensure we get empty results
+            query = query.filter(Prediction.id == -1)
         
         # Get all users for the filter dropdown
         all_users = User.query.all()
@@ -511,7 +522,8 @@ def configure_admin_routes(app):
                 'date_from': date_from,
                 'date_to': date_to,
                 'min_churn_rate': min_churn_rate,
-                'max_churn_rate': max_churn_rate
+                'max_churn_rate': max_churn_rate,
+                'min_accuracy': min_accuracy
             }
         )
     

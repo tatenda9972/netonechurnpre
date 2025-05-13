@@ -12,7 +12,7 @@
         </h5>
     </div>
     <div class="card-body">
-        <!-- Filters -->
+        <!-- Basic Filters -->
         <div class="row mb-3">
             <div class="col-md-4">
                 <div class="input-group">
@@ -38,8 +38,76 @@
                     <option value="churn">Highest Churn Rate</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-primary w-100" id="reset-filters">Reset</button>
+            <div class="col-md-2 d-flex">
+                <button class="btn btn-outline-primary me-1" id="reset-filters">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="btn btn-primary flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                    <i class="fas fa-filter me-1"></i>Advanced
+                </button>
+            </div>
+        </div>
+        
+        <!-- Advanced Filters -->
+        <div class="collapse mb-4" id="advancedFilters">
+            <div class="card card-body bg-light">
+                <form action="{{ url_for('admin_predictions') }}" method="GET" id="advanced-filter-form">
+                    <div class="row g-3">
+                        <!-- User filter -->
+                        <div class="col-md-4">
+                            <label for="user_id" class="form-label">User</label>
+                            <select class="form-select" id="user_id" name="user_id">
+                                <option value="">All Users</option>
+                                {% for user in all_users %}
+                                    <option value="{{ user.id }}" {% if filters.user_id|string == user.id|string %}selected{% endif %}>
+                                        {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Date range filters -->
+                        <div class="col-md-4">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ filters.date_from }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to"
+                                   value="{{ filters.date_to }}">
+                        </div>
+                        
+                        <!-- Churn rate range filters -->
+                        <div class="col-md-4">
+                            <label for="min_churn_rate" class="form-label">Min Churn Rate (%)</label>
+                            <input type="number" class="form-control" id="min_churn_rate" name="min_churn_rate" 
+                                   min="0" max="100" step="0.1" value="{{ filters.min_churn_rate }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="max_churn_rate" class="form-label">Max Churn Rate (%)</label>
+                            <input type="number" class="form-control" id="max_churn_rate" name="max_churn_rate"
+                                   min="0" max="100" step="0.1" value="{{ filters.max_churn_rate }}">
+                        </div>
+                        
+                        <!-- Accuracy filter -->
+                        <div class="col-md-4">
+                            <label for="min_accuracy" class="form-label">Min Accuracy</label>
+                            <input type="number" class="form-control" id="min_accuracy" name="min_accuracy"
+                                   min="0" max="1" step="0.01" value="{{ filters.min_accuracy|default('') }}">
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="col-12 d-flex justify-content-end mt-3">
+                            <button type="reset" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-undo me-1"></i>Reset Filters
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i>Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
         
@@ -211,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         deletePredictionModal.querySelector('#delete_prediction_file').textContent = predictionFile;
     });
     
-    // Simple client-side filtering
+    // Simple client-side filtering for quick search
     const tableRows = document.querySelectorAll('tbody tr');
     const searchInput = document.getElementById('prediction-search');
     const dateFilter = document.getElementById('date-filter');
@@ -233,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     searchInput.addEventListener('input', applyFilters);
     
+    // Handle basic filter reset
     resetButton.addEventListener('click', function() {
         searchInput.value = '';
         dateFilter.value = 'all';
@@ -241,6 +310,30 @@ document.addEventListener('DOMContentLoaded', function() {
             row.style.display = '';
         });
     });
+    
+    // Handle advanced filter form
+    const advancedFiltersForm = document.getElementById('advanced-filter-form');
+    if (advancedFiltersForm) {
+        const advancedResetButton = advancedFiltersForm.querySelector('button[type="reset"]');
+        
+        // Reset advanced filters
+        advancedResetButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Reset all form fields
+            const formInputs = advancedFiltersForm.querySelectorAll('input, select');
+            formInputs.forEach(input => {
+                if (input.type === 'date' || input.type === 'number') {
+                    input.value = '';
+                } else if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                }
+            });
+            
+            // Submit the form to reload the page with reset filters
+            advancedFiltersForm.submit();
+        });
+    }
 });
 </script>
 {% endblock %}
