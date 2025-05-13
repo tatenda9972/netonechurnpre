@@ -26,16 +26,24 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
 database_url = os.environ.get("DATABASE_URL")
+
 # Update the URL for SQLAlchemy if using postgres://
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///netone.db"
+# Default to SQLite for local development
+sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'netone.db')
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{sqlite_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+
+# Make sure instance folder exists
+os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
+
+print(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 # Initialize the database
 db.init_app(app)
@@ -53,12 +61,24 @@ login_manager.login_message_category = "info"
 with app.app_context():
     # Import models here to avoid circular imports
     from models import User, Prediction
-    db.create_all()
+    
+    try:
+        # Try to create all tables
+        db.create_all()
+        print("Database tables created or already exist")
+    except Exception as e:
+        print(f"Note: Error creating tables - they may already exist: {str(e)}")
 
     # Add load_user callback for Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        try:
+            return User.query.get(int(user_id))
+        except Exception as e:
+            print(f"Error loading user: {str(e)}")
+            # If there's a database error (like missing columns), 
+            # return None to prevent app crash
+            return None
 
 # Configure Flask app to use current datetime in templates and add helper functions
 @app.context_processor
