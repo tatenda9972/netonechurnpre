@@ -107,32 +107,38 @@ def get_feature_importance():
         recent_prediction = Prediction.query.order_by(Prediction.created_at.desc()).first()
         
         if recent_prediction:
+            # Get feature importance as a dictionary
             feature_importance = recent_prediction.get_feature_importance()
+            if not feature_importance or not isinstance(feature_importance, dict):
+                # Handle case where feature_importance is not a valid dictionary
+                raise ValueError("Invalid feature importance data")
+                
             # Sort by importance value (descending)
             sorted_features = sorted(
                 feature_importance.items(), 
-                key=lambda x: x[1], 
+                key=lambda x: float(x[1]) if isinstance(x[1], (int, float, str)) else 0, 
                 reverse=True
             )
             
             # Get top 10 features
             top_features = sorted_features[:10]
             
+            # Convert all values to float to ensure they're JSON-serializable
             return {
-                'features': [f[0] for f in top_features],
-                'values': [f[1] for f in top_features]
+                'features': [str(f[0]) for f in top_features],
+                'values': [float(f[1]) if isinstance(f[1], (int, float, str)) else 0.0 for f in top_features]
             }
         else:
             # Default values if no predictions
             return {
-                'features': ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5'],
+                'features': ['Age', 'Tenure_Months', 'Data_Usage_GB', 'Call_Minutes', 'SMS_Count'],
                 'values': [0.3, 0.25, 0.2, 0.15, 0.1]
             }
     except Exception as e:
         print(f"Error getting feature importance: {str(e)}")
         return {
-            'features': [],
-            'values': []
+            'features': ['No Data Available'],
+            'values': [1.0]
         }
 
 def get_confusion_matrix():
