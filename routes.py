@@ -36,6 +36,16 @@ def configure_routes(app):
             user = User.query.filter_by(email=form.email.data).first()
             
             if user and check_password_hash(user.password_hash, form.password.data):
+                # Check if user is active
+                if not user.is_active:
+                    flash('Your account has been deactivated. Please contact an administrator.', 'danger')
+                    return render_template('login.html', title='Login', form=form)
+                
+                # Update login statistics
+                user.last_login = datetime.now()
+                user.login_count += 1
+                db.session.commit()
+                
                 login_user(user, remember=form.remember_me.data)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')

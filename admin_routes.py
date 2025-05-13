@@ -429,18 +429,64 @@ def configure_admin_routes(app):
     @app.route('/admin/predictions')
     @admin_required
     def admin_predictions():
-        """Admin predictions management page"""
+        """Admin predictions management page with filtering"""
         page = request.args.get('page', 1, type=int)
         
-        # Get predictions with pagination
-        pagination = Prediction.query.order_by(Prediction.created_at.desc()).paginate(
+        # Get filter parameters
+        user_filter = request.args.get('user_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        min_churn_rate = request.args.get('min_churn_rate', type=float)
+        max_churn_rate = request.args.get('max_churn_rate', type=float)
+        
+        # Build the query with filters
+        query = Prediction.query
+        
+        # Apply user filter
+        if user_filter:
+            query = query.filter(Prediction.user_id == user_filter)
+        
+        # Apply date filters
+        if date_from:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(Prediction.created_at >= date_from_obj)
+        
+        if date_to:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Prediction.created_at < date_to_obj)
+        
+        # Apply churn rate filter (this is more complex as it requires calculation)
+        filtered_predictions = query.all()
+        
+        if min_churn_rate is not None or max_churn_rate is not None:
+            filtered_ids = []
+            for pred in filtered_predictions:
+                churn_rate = (pred.churn_count / pred.total_customers * 100) if pred.total_customers > 0 else 0
+                
+                if min_churn_rate is not None and max_churn_rate is not None:
+                    if min_churn_rate <= churn_rate <= max_churn_rate:
+                        filtered_ids.append(pred.id)
+                elif min_churn_rate is not None:
+                    if churn_rate >= min_churn_rate:
+                        filtered_ids.append(pred.id)
+                elif max_churn_rate is not None:
+                    if churn_rate <= max_churn_rate:
+                        filtered_ids.append(pred.id)
+            
+            query = query.filter(Prediction.id.in_(filtered_ids))
+        
+        # Get all users for the filter dropdown
+        all_users = User.query.all()
+        
+        # Order and paginate results
+        pagination = query.order_by(Prediction.created_at.desc()).paginate(
             page=page, per_page=10
         )
         
-        # Get summary metrics
-        total_predictions = Prediction.query.count()
-        total_customers = db.session.query(func.sum(Prediction.total_customers)).scalar() or 0
-        total_churned = db.session.query(func.sum(Prediction.churn_count)).scalar() or 0
+        # Get summary metrics (based on filters)
+        total_predictions = query.count()
+        total_customers = sum(p.total_customers for p in filtered_predictions) if filtered_predictions else 0
+        total_churned = sum(p.churn_count for p in filtered_predictions) if filtered_predictions else 0
         
         # Calculate average churn rate
         if total_customers > 0:
@@ -455,7 +501,15 @@ def configure_admin_routes(app):
             total_predictions=total_predictions,
             total_customers=total_customers,
             total_churned=total_churned,
-            avg_churn_rate=avg_churn_rate
+            avg_churn_rate=avg_churn_rate,
+            all_users=all_users,
+            filters={
+                'user_id': user_filter,
+                'date_from': date_from,
+                'date_to': date_to,
+                'min_churn_rate': min_churn_rate,
+                'max_churn_rate': max_churn_rate
+            }
         )
     
     @app.route('/admin/delete_prediction', methods=['POST'])

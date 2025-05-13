@@ -11,13 +11,54 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(64), nullable=False)
     last_name = db.Column(db.String(64), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
+    last_login = db.Column(db.DateTime, nullable=True)
+    login_count = db.Column(db.Integer, default=0)
     
     # Relationship with predictions
     predictions = db.relationship('Prediction', backref='user', lazy=True)
     
     def __repr__(self):
         return f'<User {self.email}>'
+    
+    def get_activity_stats(self):
+        """Get user activity statistics"""
+        return {
+            'prediction_count': len(self.predictions),
+            'last_prediction': self.get_last_prediction_date(),
+            'avg_churn_rate': self.get_average_churn_rate(),
+            'days_since_joining': self.get_days_since_joining(),
+            'last_login': self.last_login
+        }
+    
+    def get_last_prediction_date(self):
+        """Get the date of the user's most recent prediction"""
+        if not self.predictions:
+            return None
+        
+        return max(p.created_at for p in self.predictions)
+    
+    def get_average_churn_rate(self):
+        """Get the average churn rate across all user predictions"""
+        if not self.predictions:
+            return 0
+        
+        total_customers = sum(p.total_customers for p in self.predictions)
+        total_churned = sum(p.churn_count for p in self.predictions)
+        
+        if total_customers == 0:
+            return 0
+            
+        return (total_churned / total_customers) * 100
+    
+    def get_days_since_joining(self):
+        """Get the number of days since the user joined"""
+        if not self.created_at:
+            return 0
+            
+        delta = datetime.datetime.now() - self.created_at
+        return delta.days
 
 class Prediction(db.Model):
     """Model for storing prediction history"""
