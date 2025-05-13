@@ -179,46 +179,62 @@ def get_confusion_matrix():
         ]
 
 def get_mock_system_activities():
-    """Get mock system activities data (for display only)"""
-    current_time = datetime.now()
-    activities = [
-        {
-            'timestamp': (current_time - timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S'),
-            'action': 'User Login',
-            'user': 'admin@gmail.com',
-            'ip_address': '192.168.1.1',
-            'status': 'success'
-        },
-        {
-            'timestamp': (current_time - timedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S'),
-            'action': 'Prediction Run',
-            'user': 'user@example.com',
-            'ip_address': '192.168.1.2',
-            'status': 'success'
-        },
-        {
-            'timestamp': (current_time - timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M:%S'),
-            'action': 'Password Reset',
-            'user': 'another@example.com',
-            'ip_address': '192.168.1.3',
-            'status': 'success'
-        },
-        {
-            'timestamp': (current_time - timedelta(minutes=30)).strftime('%Y-%m-%d %H:%M:%S'),
-            'action': 'Failed Login Attempt',
-            'user': 'unknown@example.com',
-            'ip_address': '192.168.1.4',
-            'status': 'error'
-        },
-        {
-            'timestamp': (current_time - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S'),
-            'action': 'System Backup',
-            'user': 'admin@gmail.com',
-            'ip_address': '192.168.1.1',
-            'status': 'success'
-        }
-    ]
-    return activities
+    """Get system activities data based on real user activities"""
+    try:
+        # Get real user activities from the database
+        current_time = datetime.now()
+        activities = []
+        
+        # Get recent logins
+        recent_users = User.query.filter(User.last_login != None).order_by(User.last_login.desc()).limit(3).all()
+        for user in recent_users:
+            activities.append({
+                'timestamp': user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'action': 'User Login',
+                'user': user.email,
+                'ip_address': '192.168.1.1',  # Placeholder IP
+                'status': 'success'
+            })
+        
+        # Get recent predictions
+        recent_predictions = Prediction.query.order_by(Prediction.created_at.desc()).limit(3).all()
+        for pred in recent_predictions:
+            user = User.query.get(pred.user_id)
+            user_email = user.email if user is not None else 'unknown@email.com'
+            activities.append({
+                'timestamp': pred.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'action': 'Prediction Run',
+                'user': user_email,
+                'ip_address': '192.168.1.2',  # Placeholder IP
+                'status': 'success'
+            })
+        
+        # If we don't have enough real activities, add some default ones
+        if len(activities) < 3:
+            activities.append({
+                'timestamp': (current_time - timedelta(minutes=30)).strftime('%Y-%m-%d %H:%M:%S'),
+                'action': 'System Startup',
+                'user': 'system',
+                'ip_address': '127.0.0.1',
+                'status': 'success'
+            })
+        
+        # Sort by timestamp (newest first)
+        activities.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return activities[:5]  # Return at most 5 activities
+    except Exception as e:
+        print(f"Error getting system activities: {str(e)}")
+        # Fallback to static data
+        return [
+            {
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'action': 'System Check',
+                'user': 'system',
+                'ip_address': '127.0.0.1',
+                'status': 'success'
+            }
+        ]
 
 def configure_admin_routes(app):
     """Configure admin routes for the Flask app"""
