@@ -3,14 +3,18 @@ import logging
 import pandas as pd
 from app import app
 from routes import configure_routes
+from admin_routes import configure_admin_routes
 from ml_model import ChurnPredictor
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Configure routes
+# Configure main routes
 configure_routes(app)
+
+# Configure admin routes
+configure_admin_routes(app)
 
 def evaluate_model_on_startup():
     """
