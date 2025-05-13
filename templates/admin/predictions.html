@@ -1,0 +1,246 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Predictions Management - Admin Dashboard{% endblock %}
+
+{% block header %}Predictions Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-line me-2"></i>All Predictions
+        </h5>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" id="prediction-search" class="form-control" placeholder="Search by filename or user...">
+                    <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="date-filter">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="sort-by">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="customers">Most Customers</option>
+                    <option value="churn">Highest Churn Rate</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" id="reset-filters">Reset</button>
+            </div>
+        </div>
+        
+        <!-- Predictions Analysis Summaries -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Customers</h5>
+                        <p class="fs-3 fw-bold">{{ total_customers }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Churned</h5>
+                        <p class="fs-3 fw-bold">{{ total_churned }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Avg Churn Rate</h5>
+                        <p class="fs-3 fw-bold">{{ "%.2f"|format(avg_churn_rate) }}%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Predictions</h5>
+                        <p class="fs-3 fw-bold">{{ total_predictions }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Predictions Table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>File Name</th>
+                        <th>Customers</th>
+                        <th>Churned</th>
+                        <th>Churn Rate</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prediction in predictions %}
+                        <tr>
+                            <td>{{ prediction.id }}</td>
+                            <td>{{ prediction.user.email }}</td>
+                            <td>{{ prediction.file_name }}</td>
+                            <td>{{ prediction.total_customers }}</td>
+                            <td>{{ prediction.churn_count }}</td>
+                            <td>{{ "%.2f"|format(prediction.churn_count / prediction.total_customers * 100) }}%</td>
+                            <td>{{ prediction.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('prediction_result', prediction_id=prediction.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('download_report', prediction_id=prediction.id) }}" class="btn btn-secondary">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deletePredictionModal"
+                                            data-prediction-id="{{ prediction.id }}"
+                                            data-prediction-file="{{ prediction.file_name }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_predictions', page=pagination.prev_num) }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == pagination.page %}
+                            <li class="page-item active">
+                                <a class="page-link">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_predictions', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link">...</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_predictions', page=pagination.next_num) }}">Next</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Delete Prediction Modal -->
+<div class="modal fade" id="deletePredictionModal" tabindex="-1" aria-labelledby="deletePredictionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePredictionModalLabel">Delete Prediction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the prediction for file <strong id="delete_prediction_file"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('admin_delete_prediction') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="prediction_id" id="delete_prediction_id">
+                    <button type="submit" class="btn btn-danger">Delete Prediction</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle Delete Prediction Modal
+    const deletePredictionModal = document.getElementById('deletePredictionModal');
+    deletePredictionModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const predictionId = button.getAttribute('data-prediction-id');
+        const predictionFile = button.getAttribute('data-prediction-file');
+        
+        deletePredictionModal.querySelector('#delete_prediction_id').value = predictionId;
+        deletePredictionModal.querySelector('#delete_prediction_file').textContent = predictionFile;
+    });
+    
+    // Simple client-side filtering
+    const tableRows = document.querySelectorAll('tbody tr');
+    const searchInput = document.getElementById('prediction-search');
+    const dateFilter = document.getElementById('date-filter');
+    const sortBy = document.getElementById('sort-by');
+    const resetButton = document.getElementById('reset-filters');
+    
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const user = row.cells[1].textContent.toLowerCase();
+            const filename = row.cells[2].textContent.toLowerCase();
+            
+            const searchMatch = user.includes(searchTerm) || filename.includes(searchTerm);
+            
+            row.style.display = searchMatch ? '' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('input', applyFilters);
+    
+    resetButton.addEventListener('click', function() {
+        searchInput.value = '';
+        dateFilter.value = 'all';
+        sortBy.value = 'newest';
+        tableRows.forEach(row => {
+            row.style.display = '';
+        });
+    });
+});
+</script>
+{% endblock %}
