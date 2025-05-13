@@ -37,7 +37,7 @@ def configure_routes(app):
             
             if user and check_password_hash(user.password_hash, form.password.data):
                 # Check if user is active
-                if not user.is_active:
+                if not user.active_status:
                     flash('Your account has been deactivated. Please contact an administrator.', 'danger')
                     return render_template('login.html', title='Login', form=form)
                 

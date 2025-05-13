@@ -77,7 +77,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.is_active %}
+                                {% if user.active_status %}
                                     <span class="badge bg-success">Active</span>
                                 {% else %}
                                     <span class="badge bg-warning">Inactive</span>
@@ -103,7 +103,7 @@
                                             data-user-last-name="{{ user.last_name }}"
                                             data-user-email="{{ user.email }}"
                                             data-user-is-admin="{{ user.is_admin }}"
-                                            data-user-is-active="{{ user.is_active }}">
+                                            data-user-is-active="{{ user.active_status }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-danger" 

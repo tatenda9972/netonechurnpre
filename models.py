@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(64), nullable=False)
     last_name = db.Column(db.String(64), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)
+    active_status = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
     last_login = db.Column(db.DateTime, nullable=True)
     login_count = db.Column(db.Integer, default=0)
@@ -31,6 +31,11 @@ class User(UserMixin, db.Model):
             'days_since_joining': self.get_days_since_joining(),
             'last_login': self.last_login
         }
+    
+    @property
+    def is_active(self):
+        """Override UserMixin's is_active property to use active_status"""
+        return self.active_status
     
     def get_last_prediction_date(self):
         """Get the date of the user's most recent prediction"""

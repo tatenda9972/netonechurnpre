@@ -337,7 +337,8 @@ def configure_admin_routes(app):
                 last_name=last_name,
                 email=email,
                 password_hash=generate_password_hash(password),
-                is_admin=is_admin
+                is_admin=is_admin,
+                active_status=True
             )
             
             db.session.add(new_user)
@@ -362,7 +363,7 @@ def configure_admin_routes(app):
             email = request.form.get('email')
             password = request.form.get('password')
             is_admin = 'is_admin' in request.form
-            is_active = 'is_active' in request.form
+            active_status = 'is_active' in request.form
             
             # Find the user
             user = User.query.get(user_id)
@@ -380,6 +381,7 @@ def configure_admin_routes(app):
             user.last_name = last_name
             user.email = email
             user.is_admin = is_admin
+            user.active_status = active_status
             
             # Update password if provided
             if password:
