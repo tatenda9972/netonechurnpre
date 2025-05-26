@@ -24,16 +24,12 @@ csrf = CSRFProtect(app)
 # Set up proxy middleware
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Configure the database
-database_url = os.environ.get("DATABASE_URL")
-
-# Update the URL for SQLAlchemy if using postgres://
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-# Default to SQLite for local development
+# Configure the database - Force SQLite for reliability
 sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'netone.db')
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{sqlite_path}"
+
+# Force use of SQLite database instead of the disabled PostgreSQL
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{sqlite_path}"
+print(f"Using SQLite database at: {sqlite_path}")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
