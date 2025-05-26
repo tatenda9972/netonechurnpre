@@ -1,0 +1,273 @@
+/* Modern Sidebar Styles for NetOne Churn Prediction System */
+
+/* Wrapper and layout */
+#wrapper {
+    overflow-x: hidden;
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -250px;
+    -webkit-transition: margin .25s ease-out;
+    -moz-transition: margin .25s ease-out;
+    -o-transition: margin .25s ease-out;
+    transition: margin .25s ease-out;
+    width: 250px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: fixed;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+#page-content-wrapper {
+    width: 100%;
+    position: absolute;
+    padding-left: 0;
+    transition: all 0.25s ease-out;
+}
+
+#wrapper.toggled #page-content-wrapper {
+    padding-left: 250px;
+}
+
+/* Sidebar heading */
+.sidebar-heading {
+    padding: 1.5rem 1.25rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.brand-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Navigation items */
+.list-group-item {
+    border: none !important;
+    padding: 1rem 1.25rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    color: rgba(255, 255, 255, 0.8) !important;
+    background-color: transparent !important;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    transform: translateX(5px);
+}
+
+.list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border-left: 4px solid #ffd700;
+    margin-left: -4px;
+}
+
+.list-group-item.active:before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background-color: #ffd700;
+}
+
+.list-group-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* Sidebar divider */
+.sidebar-divider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 1rem 0;
+}
+
+/* User info section */
+.user-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem 1.25rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    margin-right: 0.75rem;
+}
+
+.user-avatar i {
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    display: block;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    display: block;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Top navigation */
+.navbar-light {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#menu-toggle {
+    background-color: #667eea;
+    border-color: #667eea;
+    transition: all 0.3s ease;
+}
+
+#menu-toggle:hover {
+    background-color: #764ba2;
+    border-color: #764ba2;
+    transform: scale(1.05);
+}
+
+#menu-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Content area improvements */
+.container-fluid {
+    max-width: 100%;
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        padding-left: 250px;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -250px;
+    }
+
+    #wrapper.toggled #page-content-wrapper {
+        padding-left: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .user-info {
+        display: none;
+    }
+    
+    #sidebar-wrapper {
+        width: 280px;
+        margin-left: -280px;
+    }
+    
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: 0;
+    }
+    
+    .sidebar-heading {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    
+    .brand-text {
+        font-size: 0.95rem;
+    }
+    
+    .list-group-item {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Enhanced animations */
+.list-group-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-group-item:hover {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+}
+
+/* Welcome message styling */
+.navbar-text {
+    color: #667eea !important;
+    font-weight: 500;
+}
+
+/* Scroll customization for sidebar */
+#sidebar-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Focus states for accessibility */
+.list-group-item:focus {
+    outline: 2px solid #ffd700;
+    outline-offset: -2px;
+}
+
+/* Loading state for transitions */
+body {
+    overflow-x: hidden;
+}
+
+/* Print styles */
+@media print {
+    #sidebar-wrapper {
+        display: none;
+    }
+    
+    #page-content-wrapper {
+        padding-left: 0 !important;
+    }
+}

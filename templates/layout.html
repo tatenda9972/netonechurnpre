@@ -20,93 +20,111 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
     
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-chart-line me-2"></i>NetOne Churn Prediction
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/prediction' %}active{% endif %}" href="{{ url_for('prediction') }}">
-                            <i class="fas fa-chart-pie me-1"></i> Prediction
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/history' %}active{% endif %}" href="{{ url_for('history') }}">
-                            <i class="fas fa-history me-1"></i> History
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/insights' %}active{% endif %}" href="{{ url_for('insights') }}">
-                            <i class="fas fa-lightbulb me-1"></i> Insights
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-1"></i> {{ current_user.first_name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">
-                                <i class="fas fa-id-card me-2"></i> Profile
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt me-2"></i> Logout
-                            </a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/login' %}active{% endif %}" href="{{ url_for('login') }}">
-                            <i class="fas fa-sign-in-alt me-1"></i> Login
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/register' %}active{% endif %}" href="{{ url_for('register') }}">
-                            <i class="fas fa-user-plus me-1"></i> Register
-                        </a>
-                    </li>
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div class="bg-primary border-right" id="sidebar-wrapper">
+            <div class="sidebar-heading">
+                <i class="fas fa-chart-line me-2"></i>
+                <span class="brand-text">NetOne Churn</span>
+            </div>
+            <div class="list-group list-group-flush">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('prediction') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/prediction' %}active{% endif %}">
+                        <i class="fas fa-chart-pie me-2"></i>Prediction
+                    </a>
+                    <a href="{{ url_for('history') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/history' %}active{% endif %}">
+                        <i class="fas fa-history me-2"></i>History
+                    </a>
+                    <a href="{{ url_for('insights') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/insights' %}active{% endif %}">
+                        <i class="fas fa-lightbulb me-2"></i>Insights
+                    </a>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path.startswith('/admin') %}active{% endif %}">
+                        <i class="fas fa-cogs me-2"></i>Admin Panel
+                    </a>
                     {% endif %}
-                </ul>
+                    <div class="sidebar-divider"></div>
+                    <a href="{{ url_for('profile') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/profile' %}active{% endif %}">
+                        <i class="fas fa-user-circle me-2"></i>Profile
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="list-group-item list-group-item-action bg-primary text-white">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/login' %}active{% endif %}">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{{ url_for('register') }}" class="list-group-item list-group-item-action bg-primary text-white {% if request.path == '/register' %}active{% endif %}">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                {% endif %}
+            </div>
+            
+            <!-- User Info at Bottom -->
+            {% if current_user.is_authenticated %}
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                    <small class="user-email">{{ current_user.email }}</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <!-- Top Navigation Bar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <button class="btn btn-primary" id="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <div class="navbar-nav ms-auto">
+                        {% if current_user.is_authenticated %}
+                        <span class="navbar-text me-3">
+                            Welcome back, {{ current_user.first_name }}!
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Flash Messages -->
+            <div class="container-fluid">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="row">
+                            <div class="col-12">
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            <!-- Main Content -->
+            <div class="container-fluid py-4">
+                {% block content %}{% endblock %}
             </div>
         </div>
-    </nav>
-
-    <!-- Flash Messages -->
-    <div class="container mt-3">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
     </div>
-    
-    <!-- Main Content -->
-    <main class="container my-4">
-        {% block content %}{% endblock %}
-    </main>
     
     <!-- Footer removed as requested -->
     
@@ -118,6 +136,70 @@
     
     <!-- Custom Main JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const wrapper = document.getElementById('wrapper');
+            
+            // Initialize sidebar state
+            if (window.innerWidth >= 768) {
+                wrapper.classList.add('toggled');
+            }
+            
+            // Toggle sidebar
+            menuToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                wrapper.classList.toggle('toggled');
+                
+                // Store sidebar state
+                localStorage.setItem('sidebarToggled', wrapper.classList.contains('toggled'));
+            });
+            
+            // Restore sidebar state on page load
+            const sidebarToggled = localStorage.getItem('sidebarToggled');
+            if (sidebarToggled === 'true') {
+                wrapper.classList.add('toggled');
+            } else if (sidebarToggled === 'false') {
+                wrapper.classList.remove('toggled');
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth < 768) {
+                    wrapper.classList.remove('toggled');
+                } else {
+                    const stored = localStorage.getItem('sidebarToggled');
+                    if (stored === null || stored === 'true') {
+                        wrapper.classList.add('toggled');
+                    }
+                }
+            });
+            
+            // Close sidebar on mobile when clicking outside
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth < 768 && 
+                    wrapper.classList.contains('toggled') && 
+                    !document.getElementById('sidebar-wrapper').contains(e.target) && 
+                    !menuToggle.contains(e.target)) {
+                    wrapper.classList.remove('toggled');
+                }
+            });
+            
+            // Add smooth scroll behavior for sidebar links
+            const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Add active state animation
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+        });
+    </script>
     
     {% block scripts %}{% endblock %}
 </body>
